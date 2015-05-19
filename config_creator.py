@@ -20,7 +20,10 @@ class ImagrConfigPlist():
             with open(path) as infile:
             	plist = plistlib.readPlist(infile)
             	self.password = plist.get('password')
-            	self.workflows = plist.get('workflows')
+            	self.workflows = plist.get('workflows') #self.workflows is a list of workflows (dicts)
+            	for workflow in plist.get('workflows'):
+            	    self.workflowDict[workflow.get('name')] = workflow
+            	    #self.workflowDict['Sup']['name'] == 'Sup'
         self.plistPath = path
     
     def getWorkflows(self):
@@ -38,6 +41,22 @@ class ImagrConfigPlist():
     def newPassword(self, password):
     '''Sets a new password'''
     	self.password = hashlib.sha512(str(password)).hexdigest()
+    	
+    def setRestartAction(self, action='None', workflowName):
+    '''Sets a restart action for the given workflow'''
+        self.workflowDict[workflowName]['restart_action'] = action
+        
+    def setBless(self, bless=False, workflowName):
+    '''Sets bless to True or False for the given workflow'''
+        self.workflowDict[workflowName]['bless_target'] = bless
+        
+    def setDescription(self, description='', workflowName):
+    '''Sets description for the given workflow'''
+        self.workflowDict[workflowName]['description'] = description
+    
+    def displayComponents(self, workflowName):
+    '''Displays a pretty-print list of components for a given workflow'''
+        pprint.pprint(self.workflowDict[workflowName]['components'])
     
     # List of commands mapped to data types that they'll autocomplete with
     cmds = {
