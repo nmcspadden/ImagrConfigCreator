@@ -27,9 +27,15 @@ def help(args):
 ## Setup functions
 
 def getWorkflowNames(plist):
-    print "hi"
+    '''Returns a list of names of existing workflows'''
+    workflowList = plist.get('workflows', list()) # If it's a new plist, this will be an empty list
+    if len(workflowList) != 0:
+        for workflow in workflowList:
+            workflowList.append(workflow.get('name'))
+    return workflowList
 
 def cleanupAndExit(exitcode, plist):
+    '''Write out the plist and then stop'''
     with open(plist, 'wb') as outfile:
         plistlib.writePlist(outfile)
     sys.exit(exitcode)
