@@ -13,32 +13,42 @@ try:
 except ImportError:
     import plistlib
 
-## Subcommands
+# Imagr Config Plist class
 
-def help(args):
-    '''Prints available subcommands'''
-    print "Available sub-commands:"
-    subcommands = CMD_ARG_DICT['cmds'].keys()
-    subcommands.sort()
-    for item in subcommands:
-        print '\t%s' % item
-    return 0
+class ImagrConfigPlist():
+    configPlist = dict()
     
-## Setup functions
+    def __init__(self, path):
+        if os.path.exists(self.plistPath):
+            
+        self.plistPath = path
+    
+    # List of commands mapped to data types that they'll autocomplete with
+    cmds = {
+        'new-password':         'password',     # new-password <password> <workflow>
+        'show-password':        'password',     # show-password <workflow>
+        'add-workflow':         'workflows',    # add-workflow <name>
+        'display-workflows':    'workflows',    # display-workflows [<index>]
+        'remove-workflow':      'workflows',    # remove-workflow <workflow>
+        'set-restart-action':   'workflows',    # set-restart-action <restart> <workflow>
+        'set-bless-target':     'workflows',    # set-bless-target <t/f> <workflow>
+        'set-description':      'workflows',    # set-description <desc> <workflow>
+        'add-component':        'components',   # add-component <type> [<index>] <workflow>
+        'remove-component':     'components',   # remove-component <index> <workflow>
+        'display-components':   'components',   # display-components [<index>] <workflow>
+        'list-types':           'components',   
+        'exit':                 'default',
+        'help':                 'default',
+        'version':              'default'
+        } 
+    CMD_ARG_DICT['cmds'] = cmds
+    
+    CMD_ARG_DICT['default'] = []
+    CMD_ARG_DICT['workflows'] = getWorkflowNames()
+    CMD_ARG_DICT['components'] = getComponentList()
 
-def getWorkflowNames(plist):
-    '''Returns a list of names of existing workflows'''
-    workflowList = plist.get('workflows', list()) # If it's a new plist, this will be an empty list
-    if len(workflowList) != 0:
-        for workflow in workflowList:
-            workflowList.append(workflow.get('name'))
-    return workflowList
 
-def cleanupAndExit(exitcode, plist):
-    '''Write out the plist and then stop'''
-    with open(plist, 'wb') as outfile:
-        plistlib.writePlist(outfile)
-    sys.exit(exitcode)
+# Generic helper functions for autocomplete, stolen from Munki
 
 def tab_completer(text, state):
     '''Called by the readline lib to calculate possible completions'''
@@ -77,34 +87,9 @@ def setUpTabCompleter():
         readline.parse_and_bind ("bind ^I rl_complete")
     else:
         readline.parse_and_bind("tab: complete")
-        
-def handleSubcommand(args, plist):
-    '''Does all our subcommands'''
-    # strip leading hyphens and
-    # replace embedded hyphens with underscores
-    # so '--add-workflow' becomes 'add_workflow'
-    subcommand = args[0].lstrip('-').replace('-', '_')
 
-    # special case the exit command
-    if subcommand == 'exit':
-       cleanupAndExit(0)
-
-    try:
-        # find function to call by looking in the global name table
-        # for a function with a name matching the subcommand
-        subcommand_function = globals()[subcommand]
-        return subcommand_function(args[1:], plist)
-    except (TypeError, KeyError):
-        print >> sys.stderr, 'Unknown subcommand: %s' % subcommand
-        help(args)
-        return 2
-
-CMD_ARG_DICT = {}
 
 def main():
-    global INTERACTIVE_MODE
-    global CMD_ARG_DICT
-
     workflowList = list()
     plistPassword = ''
     
@@ -125,28 +110,23 @@ def main():
         # file does not exist, we'll save it on exit
         configPlist = dict()
     
-    cmds = {'new-password':         'password',     # new-password <password> <workflow>
-            'show-password':        'password',     # show-password <workflow>
-            'add-workflow':         'workflows',    # add-workflow <name>
-            'display-workflows':    'workflows',    # display-workflows [<index>]
-            'remove-workflow':      'workflows',    # remove-workflow <workflow>
-            'set-restart-action':   'workflows',    # set-restart-action <restart> <workflow>
-            'set-bless-target':     'workflows',    # set-bless-target <t/f> <workflow>
-            'set-description':      'workflows',    # set-description <desc> <workflow>
-            'add-component':        'components',   # add-component <type> [<index>] <workflow>
-            'remove-component':     'components',   # remove-component <index> <workflow>
-            'display-components':   'components',   # display-components [<index>] <workflow>
-            'list-types':           'components',   
-            'exit':                 'default',
-            'help':                 'default',
-            'version':              'default'
+    cmds = ['new-password',         # new-password <password> <workflow>
+            'show-password',        # show-password <workflow>
+            'add-workflow',         # add-workflow <name>
+            'display-workflows',    # display-workflows [<index>]
+            'remove-workflow',      # remove-workflow <workflow>
+            'set-restart-action',   # set-restart-action <restart> <workflow>
+            'set-bless-target',     # set-bless-target <t/f> <workflow>
+            'set-description',      # set-description <desc> <workflow>
+            'add-component',        # add-component <type> [<index>] <workflow>
+            'remove-component',     # remove-component <index> <workflow>
+            'display-components',   # display-components [<index>] <workflow>
+            'list-types',   
+            'exit',
+            'help',
+            'version'
             } 
     CMD_ARG_DICT['cmds'] = cmds
-    
-    CMD_ARG_DICT['default'] = []
-    CMD_ARG_DICT['workflows'] = getWorkflowNames()
-    CMD_ARG_DICT['components'] = getComponentList()
-    #CMD_ARG_DICT['password'] = getPassword()
 
     setUpTabCompleter()
     print 'Entering interactive mode... (type "help" for commands)'
