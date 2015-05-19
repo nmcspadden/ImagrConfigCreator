@@ -1,12 +1,10 @@
 #!/usr/bin/python
 
-import fnmatch
-import shlex
 import subprocess
 import sys
-import argparse
 import os
-import readline
+import hashlib
+import pprint
 
 try:
     import FoundationPlist as plistlib
@@ -16,12 +14,30 @@ except ImportError:
 # Imagr Config Plist class
 
 class ImagrConfigPlist():
-    configPlist = dict()
     
     def __init__(self, path):
-        if os.path.exists(self.plistPath):
-            
+        if os.path.exists(path):
+            with open(path) as infile:
+            	plist = plistlib.readPlist(infile)
+            	self.password = plist.get('password')
+            	self.workflows = plist.get('workflows')
         self.plistPath = path
+    
+    def getWorkflows(self):
+    '''Returns a list of workflows in the plist'''
+    	return self.workflows
+    	
+    def displayWorkflows(self):
+    '''Displays a pretty-print list of workflows'''
+    	pprint.pprint(self.workflows)
+    
+    def getPassword(self):
+    '''Returns the password hash'''
+    	return self.password
+    
+    def newPassword(self, password):
+    '''Sets a new password'''
+    	self.password = hashlib.sha512(str(password)).hexdigest()
     
     # List of commands mapped to data types that they'll autocomplete with
     cmds = {
