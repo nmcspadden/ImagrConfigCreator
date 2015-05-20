@@ -31,7 +31,7 @@ class ImagrConfigPlist():
             self.workflowDict = dict()
             self.password = plist.get('password')
             for workflow in plist.get('workflows'):
-                self.workflowDict[workflow.get('name')] = workflow  #In other words, self.workflowDict['Sup']['name'] == 'Sup'
+                self.workflowDict[str(workflow.get('name'))] = workflow  #In other words, self.workflowDict['Sup']['name'] == 'Sup'
         else:
             self.password = ''
             self.workflows = list()
@@ -48,6 +48,14 @@ class ImagrConfigPlist():
                 workflows.append(workflow)
             plist['workflows'] = workflows
             plistlib.writePlist(plist)
+    
+    # Component-type subcommands
+    def list_types(self, args):
+        if len(args) != 0:
+            print >> sys.stderr, 'Usage: display-workflows'
+            return 22 # Invalid argument
+        pprint.pprint(self.workflowComponentTypes)
+        return 0
     
     # Workflow-related functions that are not subcommands    
     def getWorkflowComponentTypes(self):
@@ -67,44 +75,99 @@ class ImagrConfigPlist():
         """Displays a pretty-print list of workflows"""
         #args is basically ignored
         if len(args) != 0:
-            print >> sys.stderr, 'Usage: display_workflows'
+            print >> sys.stderr, 'Usage: display-workflows'
             return 22 # Invalid argument
-        pprint.pprint(self.workflows)
+        workflows = list()
+        for workflow in self.workflowDict.keys():
+            workflows.append(workflow)
+        pprint.pprint(workflows)
         return 0
     
-    def add_workflow(self, name):
-        """Adds a new workflow to the list of workflows at index"""
+    def add_workflow(self, args):
+        """Adds a new workflow to the list of workflows"""
+        if len(args) != 1:
+            print >> sys.stderr, 'Usage: add-workflow <workflowName>'
+            return 22
         workflow = dict()
-        workflow['name'] = name
-        self.workflowDict[name] = workflow
+        workflow['name'] = args[0]
+        workflow['description'] = ''
+        workflow['restart_action'] = 'none'
+        workflow['bless_target'] = False
+        workflow['components'] = list()
+        self.workflowDict[args[0]] = workflow
+        self.show_workflow(args)
+        return 0
     
-    def remove_workflow(self, name):
+    def remove_workflow(self, args):
         """Removes workflow with given name from list"""
-        del self.workflowDict[name]
+        if len(args) != 1:
+            print >> sys.stderr, 'Usage: remove-workflow <workflowName>'
+            return 22
+        del self.workflowDict[args[0]]
+        self.display_workflows([])
+        return 0
+    
+    def show_workflow(self, args):
+        """Shows a workflow with a given name"""
+        if len(args) != 1:
+            print >> sys.stderr, 'Usage: show-workflow <workflowName>'
+            return 22
+        pprint.pprint(self.workflowDict[args[0]])
+        return 0
     
     # Password subcommands
-    def show_password(self):
+    def show_password(self, args):
         """Returns the password hash"""
-        return self.password
+        #args is basically ignored
+        if len(args) != 0:
+            print >> sys.stderr, 'Usage: show-password'
+            return 22 # Invalid argument
+        print self.password
+        return 0
     
-    def new_password(self, password):
+    def new_password(self, args):
         """Sets a new password"""
-        self.password = hashlib.sha512(str(password)).hexdigest()
+        if len(args) != 1:
+            print >> sys.stderr, 'Usage: new-password <password>'
+            return 22
+        self.password = hashlib.sha512(str(args[0])).hexdigest()
+        self.show_password([])
+        return 0
     
     # RestartAction subcommands
-    def set_restart_action(self, workflowName, action='None'):
+    def set_restart_action(self, args):
         """Sets a restart action for the given workflow"""
-        self.workflowDict[workflowName]['restart_action'] = action
+        if len(args) > 2 or len(args) == 0:
+            print >> sys.stderr, 'Usage: set-restart-action <workflowName> <action>'
+            return 22
+        if len(args) == 1:
+            action = 'none'
+        if len(args) == 2:
+            if args[1] not in ['restart', 'shutdown', 'none']:
+                print >> sys.stderr, 'Usage: set-restart-action must have \'restart\', \'shutdown\', or \'none\''
+                return 22
+            action = args[1]
+        self.workflowDict[args[0]]['restart_action'] = action
+        self.show_workflow(args[0:1])
+        return 0
     
     # Bless subcommands
-    def set_bless_target(self, workflowName, bless=False):
+    def set_bless_target(self, args):
         """Sets bless to True or False for the given workflow"""
-        self.workflowDict[workflowName]['bless_target'] = bless
+        if len(args) != 2:
+            print >> sys.stderr, 'Usage: set-bless-target <workflowName> <True/False>'
+            return 22
+        self.workflowDict[args[0]]['bless_target'] = bool(args[1])
     
     # Description subcommands
-    def set_description(self, workflowName, description=''):
+    def set_description(self, args):
         """Sets description for the given workflow"""
-        self.workflowDict[workflowName]['description'] = description
+        if len(args) != 2:
+            print >> sys.stderr, 'Usage: set-description <workflowName> <description>'
+            return 22
+        self.workflowDict[args[0]]['description'] = args[1]
+        self.show_workflow(args[0:1])
+        return 0
     
     # Component-related functions that are not subcommands
     def getComponents(self, workflowName):
@@ -112,9 +175,12 @@ class ImagrConfigPlist():
         return self.workflowDict[workflowName]['components']
     
     # Component subcommands
-    def display_components(self, workflowName):
+    def display_components(self, args):
         """Displays a pretty-print list of components for a given workflow"""
-        pprint.pprint(self.workflowDict[workflowName]['components'])
+        if len(args) != 1:
+            print >> sys.stderr, 'Usage: display_components <workflowName>'
+            return 22
+        pprint.pprint(self.workflowDict[args[0]]['components'])
     
     def remove_component(self, index, workflowName):
         """Removes a component at index from workflow"""
@@ -215,12 +281,11 @@ def handleSubcommand(args, plist):
         return help(args)
 
     try:
-        # find function to call by looking in the global name table
+        # find function to call by looking in the ImagrConfigPlist name table
         # for a function with a name matching the subcommand
         subcommand_function = getattr(plist, subcommand)
-        print "Subcommand function: %s" % subcommand_function
         return subcommand_function(args[1:])
-    except (TypeError, KeyError):
+    except (TypeError, KeyError, AttributeError):
         print >> sys.stderr, 'Unknown subcommand: %s' % subcommand
         help(args)
         return 2
@@ -247,17 +312,18 @@ def main():
     
     # List of commands mapped to data types that they'll autocomplete with
     cmds = {
-        'new-password':         'workflows',     # new-password <password> <workflow>
-        'show-password':        'workflows',     # show-password <workflow>
+        'new-password':         'workflows',     # new-password <password>
+        'show-password':        'workflows',     # show-password
         'add-workflow':         'workflows',    # add-workflow <name>
         'display-workflows':    'workflows',    # display-workflows [<index>]
+        'show-workflow':        'workflows',    # show-workflow <workflow>
         'remove-workflow':      'workflows',    # remove-workflow <workflow>
-        'set-restart-action':   'workflows',    # set-restart-action <restart> <workflow>
+        'set-restart-action':   'workflows',    # set-restart-action <workflow> <restart> 
         'set-bless-target':     'workflows',    # set-bless-target <t/f> <workflow>
         'set-description':      'workflows',    # set-description <desc> <workflow>
         'add-component':        'workflows',   # add-component <type> [<index>] <workflow>
         'remove-component':     'components',   # remove-component <index> <workflow>
-        'display-components':   'components',   # display-components [<index>] <workflow>
+        'display-components':   'components',   # display-components <workflow>
         'list-types':           'components',   
         'exit':                 'default',
         'help':                 'default',
@@ -276,7 +342,7 @@ def main():
         except (KeyboardInterrupt, EOFError):
             # React to Control-C and Control-D
             print # so we finish off the raw_input line
-            print "GOODBYE!"
+            # At some point I'll do something more useful here
             sys.exit(0)
         args = shlex.split(cmd)
         print "Args: %s" % args
