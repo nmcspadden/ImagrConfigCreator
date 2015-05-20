@@ -180,38 +180,55 @@ class ImagrConfigPlist():
         if len(args) != 1:
             print >> sys.stderr, 'Usage: display_components <workflowName>'
             return 22
-        pprint.pprint(self.workflowDict[args[0]]['components'])
+        #pprint.pprint(self.workflowDict[args[0]]['components'])
+        for i, elem in enumerate(self.workflowDict[args[0]]['components']):
+            print '{0}: {1}'.format(i, elem)
     
-    def remove_component(self, index, workflowName):
+    def remove_component(self, args):
         """Removes a component at index from workflow"""
-        del self.workflowDict[workflowName]['components'][index]
+        if len(args) != 2:
+            print >> sys.stderr, 'Usage: remove-component <workflowName> <index>'
+            return 22
+        del self.workflowDict[args[0]]['components'][int(args[1])]
     
-    def addImageComponent(self, index, url, workflowName):
+    def add_image_component(self, args):
         """Adds an Image task at index with URL for a workflow"""
+        if len(args) != 3:
+            print >> sys.stderr, 'Usage: add-image-component <workflowName> <index> <url>'
+            return 22
         imageComponent = self.workflowComponentTypes['image']
-        imageComponent['url'] = url
-        self.workflowDict[workflowName]['components'].insert(index, imageComponent)
+        imageComponent['url'] = args[2]
+        self.workflowDict[args[0]]['components'].insert(args[1], imageComponent)
     
-    def addPackageComponent(self, index, url, workflowName, first_boot=True):
+    def add_package_component(self, args):
         """Adds a Package task at index with URL, first_boot for workflow"""
+        if len(args) != 4:
+            print >> sys.stderr, 'Usage: add-package-component <workflowName> <index> <url> <first_boot t/f>'
+            return 22
         packageComponent = self.workflowComponentTypes['package']
-        packageComponent['url'] = url
-        packageComponent['first_boot'] = first_boot
-        self.workflowDict[workflowName]['components'].insert(index, packageComponent)
+        packageComponent['url'] = args[2]
+        packageComponent['first_boot'] = args[3]
+        self.workflowDict[args[0]]['components'].insert(args[1], packageComponent)
     
-    def addComputerNameComponent(self, index, workflowName, use_serial=False, auto=False):
+    def add_computername_component(self, args):
         """Adds a ComputerName task at index with use_serial and auto for workflow"""
+        if len(args) != 4:
+            print >> sys.stderr, 'Usage: add-computername-component <workflowName> <index> <use_serial t/f> <auto t/f>'
+            return 22
         computerNameComponent = self.workflowComponentTypes['computername']
-        computerNameComponent['use_serial'] = use_serial
-        computerNameComponent['auto'] = auto
-        self.workflowDict[workflowName]['components'].insert(index, computerNameComponent)
+        computerNameComponent['use_serial'] = args[2]
+        computerNameComponent['auto'] = args[3]
+        self.workflowDict[args[0]]['components'].insert(args[1], computerNameComponent)
     
-    def addScriptComponent(self, index, content, workflowName, first_boot=True):
+    def add_script_component(self, args):
         """Adds a Script component at index with content for workflow"""
+        if len(args) != 4:
+            print >> sys.stderr, 'Usage: add-image-component <workflowName> <index> <path to script> <first_boot t/f>'
+            return 22
         scriptComponent = self.workflowComponentTypes['script']
-        scriptComponent['content'] = content
-        scriptComponent['first_boot'] = first_boot
-        self.workflowDict[workflowName]['components'].insert(index, scriptComponent)
+        scriptComponent['content'] = args[2] #this should be a path to a script file - do this later
+        scriptComponent['first_boot'] = args[3]
+        self.workflowDict[args[0]]['components'].insert(args[1], scriptComponent)
 
 
 # Generic helper functions for autocomplete, stolen from Munki manifestutil
@@ -315,13 +332,16 @@ def main():
         'new-password':         'workflows',     # new-password <password>
         'show-password':        'workflows',     # show-password
         'add-workflow':         'workflows',    # add-workflow <name>
-        'display-workflows':    'workflows',    # display-workflows [<index>]
+        'display-workflows':    'workflows',    # display-workflows
         'show-workflow':        'workflows',    # show-workflow <workflow>
         'remove-workflow':      'workflows',    # remove-workflow <workflow>
         'set-restart-action':   'workflows',    # set-restart-action <workflow> <restart> 
-        'set-bless-target':     'workflows',    # set-bless-target <t/f> <workflow>
-        'set-description':      'workflows',    # set-description <desc> <workflow>
-        'add-component':        'workflows',   # add-component <type> [<index>] <workflow>
+        'set-bless-target':     'workflows',    # set-bless-target <workflow> <t/f> 
+        'set-description':      'workflows',    # set-description <workflow> <desc>
+        'add-image-component':  'workflows',    # add-image-component <workflow> <index> <url>
+        'add-package-component':  'workflows',    # add-package-component <workflow> <index> <url> <first_boot t/f>
+        'add-computername-component':  'workflows',    # add-image-component <workflow> <index> <use_serial t/f> <auto t/f>
+        'add-script-component':  'workflows',    # add-image-component <workflow> <index> <content> <first_boot t/f>
         'remove-component':     'components',   # remove-component <index> <workflow>
         'display-components':   'components',   # display-components <workflow>
         'list-types':           'components',   
