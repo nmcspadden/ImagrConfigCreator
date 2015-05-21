@@ -103,7 +103,7 @@ class ImagrConfigPlist():
     
     def add_workflow(self, args):
         """Adds a new workflow to the list of workflows at index. Index defaults to end of workflow list"""
-        if len(args) < 1 and len(args) > 2:
+        if len(args) < 1 or len(args) > 2:
             print >> sys.stderr, 'Usage: add-workflow <workflowName> [<index>]'
             return 22
         index = len(self.internalPlist['workflows'])
@@ -137,7 +137,7 @@ class ImagrConfigPlist():
             key = self.findWorkflowIndexByName(args[0])
         try:
             del self.internalPlist['workflows'][key]
-        except IndexError:
+        except (IndexError, TypeError):
             print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
             return 22
         self.display_workflows([])
@@ -156,7 +156,7 @@ class ImagrConfigPlist():
             key = self.findWorkflowIndexByName(args[0])
         try:
             pprint.pprint(self.internalPlist['workflows'][key])
-        except IndexError:
+        except (IndexError, TypeError):
             # If it gets here, no workflow by that name or index was found.
             print >> sys.stderr, 'No workflow found at %s: ' % args[0]
             return 22
@@ -204,7 +204,7 @@ class ImagrConfigPlist():
             name = [ args[0] ]
         try:
             self.internalPlist['workflows'][key]['restart_action'] = action
-        except IndexError:
+        except (IndexError, TypeError):
             print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
             return 22
         self.show_workflow(name)
@@ -226,7 +226,7 @@ class ImagrConfigPlist():
             name = [ args[0] ]
         try:
             self.internalPlist['workflows'][key]['bless_target'] = bool(args[1])
-        except IndexError:
+        except (IndexError, TypeError):
             print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
             return 22
         self.show_workflow(name)
@@ -248,7 +248,7 @@ class ImagrConfigPlist():
             name = [ args[0] ]
         try:
             self.internalPlist['workflows'][key]['description'] = args[1]
-        except IndexError:
+        except (IndexError, TypeError):
             print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
             return 22
         self.show_workflow(name)
@@ -269,7 +269,7 @@ class ImagrConfigPlist():
         try:
             for i, elem in enumerate(self.internalPlist['workflows'][key]['components']):
                 print '{0}: {1}'.format(i, elem)
-        except IndexError:
+        except (IndexError, TypeError):
             print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
             return 22
         return 0
@@ -287,18 +287,18 @@ class ImagrConfigPlist():
             key = self.findWorkflowIndexByName(args[0])
         try:
             del self.internalPlist['workflows'][key]['components'][int(args[1])]
-        except IndexError:
+        except (IndexError, TypeError):
             print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
             return 22
         return 0
     
     def add_image_component(self, args):
-        """Adds an Image task at index with URL for a workflow"""
-        if len(args) != 3:
-            print >> sys.stderr, 'Usage: add-image-component <workflowName or index> <index> <url>'
+        """Adds an Image task at index with URL for a workflow. If no index is specified, defaults to end"""
+        if len(args) < 2:
+            print >> sys.stderr, 'Usage: add-image-component <workflowName or index> <url> [<index>]'
             return 22
         imageComponent = self.workflowComponentTypes['image']
-        imageComponent['url'] = args[2]
+        imageComponent['url'] = args[1]
         try:
             key = int(args[0])
             # If an index is provided, it can be cast to an int
@@ -308,8 +308,12 @@ class ImagrConfigPlist():
             key = self.findWorkflowIndexByName(args[0])
             name = [ args[0] ]
         try:
-            self.internalPlist['workflows'][key]['components'].insert(key, imageComponent)
-        except IndexError:
+            index = len(self.internalPlist['workflows'][key]['components'])
+            if len(args) == 3:
+                index = int(args[2])
+            print "Index: %s" % index
+            self.internalPlist['workflows'][key]['components'].insert(index, imageComponent)
+        except (IndexError, TypeError):
             print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
             return 22
         self.show_workflow(name)
@@ -317,12 +321,12 @@ class ImagrConfigPlist():
     
     def add_package_component(self, args):
         """Adds a Package task at index with URL, first_boot for workflow"""
-        if len(args) != 4:
-            print >> sys.stderr, 'Usage: add-package-component <workflowName> <index> <url> <first_boot t/f>'
+        if len(args) < 3:
+            print >> sys.stderr, 'Usage: add-package-component <workflowName> <url> <first_boot t/f> [<index>]'
             return 22
         packageComponent = self.workflowComponentTypes['package']
-        packageComponent['url'] = args[2]
-        packageComponent['first_boot'] = args[3]
+        packageComponent['url'] = args[1]
+        packageComponent['first_boot'] = bool(args[2])
         try:
             key = int(args[0])
             # If an index is provided, it can be cast to an int
@@ -332,8 +336,11 @@ class ImagrConfigPlist():
             key = self.findWorkflowIndexByName(args[0])
             name = [ args[0] ]
         try:
-            self.internalPlist['workflows'][key]['components'].insert(key, packageComponent)
-        except IndexError:
+            index = len(self.internalPlist['workflows'][key]['components'])
+            if len(args) == 4:
+                index = int(args[3])
+            self.internalPlist['workflows'][key]['components'].insert(index, packageComponent)
+        except (IndexError, TypeError):
             print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
             return 22
         self.show_workflow(name)
@@ -341,12 +348,12 @@ class ImagrConfigPlist():
     
     def add_computername_component(self, args):
         """Adds a ComputerName task at index with use_serial and auto for workflow"""
-        if len(args) != 4:
-            print >> sys.stderr, 'Usage: add-computername-component <workflowName> <index> <use_serial t/f> <auto t/f>'
+        if len(args) < 3:
+            print >> sys.stderr, 'Usage: add-computername-component <workflowName> <use_serial t/f> <auto t/f> [<index>]'
             return 22
         computerNameComponent = self.workflowComponentTypes['computername']
-        computerNameComponent['use_serial'] = args[2]
-        computerNameComponent['auto'] = args[3]
+        computerNameComponent['use_serial'] = bool(args[1])
+        computerNameComponent['auto'] = bool(args[2])
         try:
             key = int(args[0])
             # If an index is provided, it can be cast to an int
@@ -356,8 +363,11 @@ class ImagrConfigPlist():
             key = self.findWorkflowIndexByName(args[0])
             name = [ args[0] ]
         try:
-            self.internalPlist['workflows'][key]['components'].insert(key, computerNameComponent)
-        except IndexError:
+            index = len(self.internalPlist['workflows'][key]['components'])
+            if len(args) == 4:
+                index = int(args[3])
+            self.internalPlist['workflows'][key]['components'].insert(index, computerNameComponent)
+        except (IndexError, TypeError):
             print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
             return 22
         self.show_workflow(name)
@@ -365,12 +375,12 @@ class ImagrConfigPlist():
     
     def add_script_component(self, args):
         """Adds a Script component at index with content for workflow"""
-        if len(args) != 4:
-            print >> sys.stderr, 'Usage: add-image-component <workflowName> <index> <path to script> <first_boot t/f>'
+        if len(args) < 3:
+            print >> sys.stderr, 'Usage: add-script-component <workflowName> <path to script> <first_boot t/f> [<index>]'
             return 22
         scriptComponent = self.workflowComponentTypes['script']
-        scriptComponent['content'] = readfile(args[2])
-        scriptComponent['first_boot'] = args[3]
+        scriptComponent['content'] = readfile(args[1])
+        scriptComponent['first_boot'] = bool(args[2])
         try:
             key = int(args[0])
             # If an index is provided, it can be cast to an int
@@ -380,8 +390,11 @@ class ImagrConfigPlist():
             key = self.findWorkflowIndexByName(args[0])
             name = [ args[0] ]
         try:
-            self.internalPlist['workflows'][key]['components'].insert(key, scriptComponent)
-        except IndexError:
+            index = len(self.internalPlist['workflows'][key]['components'])
+            if len(args) == 4:
+                index = int(args[3])
+            self.internalPlist['workflows'][key]['components'].insert(index, scriptComponent)
+        except (IndexError, TypeError):
             print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
             return 22
         self.show_workflow(name)
@@ -459,8 +472,8 @@ def handleSubcommand(args, plist):
         # for a function with a name matching the subcommand
         subcommand_function = getattr(plist, subcommand)
         return subcommand_function(args[1:])
-    except (TypeError, KeyError, AttributeError):
-        print >> sys.stderr, 'Unknown subcommand: %s' % subcommand
+    except (TypeError, KeyError, AttributeError), errmsg:
+        print >> sys.stderr, 'Unknown subcommand: %s: %s' % (subcommand, errmsg)
         help(args)
         return 2
 
