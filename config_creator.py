@@ -135,7 +135,11 @@ class ImagrConfigPlist():
         except ValueError:
             # A name was provided that can't be cast to an int
             key = self.findWorkflowIndexByName(args[0])
-        del self.internalPlist['workflows'][key]
+        try:
+            del self.internalPlist['workflows'][key]
+        except IndexError:
+            print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
+            return 22
         self.display_workflows([])
         return 0
     
@@ -198,7 +202,11 @@ class ImagrConfigPlist():
             # A name was provided that can't be cast to an int
             key = self.findWorkflowIndexByName(args[0])
             name = [ args[0] ]
-        self.internalPlist['workflows'][key]['restart_action'] = action
+        try:
+            self.internalPlist['workflows'][key]['restart_action'] = action
+        except IndexError:
+            print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
+            return 22
         self.show_workflow(name)
         return 0
     
@@ -216,7 +224,11 @@ class ImagrConfigPlist():
             # A name was provided that can't be cast to an int
             key = self.findWorkflowIndexByName(args[0])
             name = [ args[0] ]
-        self.internalPlist['workflows'][key]['bless_target'] = bool(args[1])
+        try:
+            self.internalPlist['workflows'][key]['bless_target'] = bool(args[1])
+        except IndexError:
+            print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
+            return 22
         self.show_workflow(name)
         return 0
     
@@ -234,7 +246,11 @@ class ImagrConfigPlist():
             # A name was provided that can't be cast to an int
             key = self.findWorkflowIndexByName(args[0])
             name = [ args[0] ]
-        self.internalPlist['workflows'][key]['description'] = args[1]
+        try:
+            self.internalPlist['workflows'][key]['description'] = args[1]
+        except IndexError:
+            print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
+            return 22
         self.show_workflow(name)
         return 0
     
@@ -250,8 +266,12 @@ class ImagrConfigPlist():
         except ValueError:
             # A name was provided that can't be cast to an int
             key = self.findWorkflowIndexByName(args[0])
-        for i, elem in enumerate(self.internalPlist['workflows'][key]['components']):
-            print '{0}: {1}'.format(i, elem)
+        try:
+            for i, elem in enumerate(self.internalPlist['workflows'][key]['components']):
+                print '{0}: {1}'.format(i, elem)
+        except IndexError:
+            print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
+            return 22
         return 0
     
     def remove_component(self, args):
@@ -265,7 +285,11 @@ class ImagrConfigPlist():
         except ValueError:
             # A name was provided that can't be cast to an int
             key = self.findWorkflowIndexByName(args[0])
-        del self.internalPlist['workflows'][key]['components'][int(args[1])]
+        try:
+            del self.internalPlist['workflows'][key]['components'][int(args[1])]
+        except IndexError:
+            print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
+            return 22
         return 0
     
     def add_image_component(self, args):
@@ -283,9 +307,11 @@ class ImagrConfigPlist():
             # A name was provided that can't be cast to an int
             key = self.findWorkflowIndexByName(args[0])
             name = [ args[0] ]
-        print "key: %s" % key
-        print "imagecomp: %s" % imageComponent
-        self.internalPlist['workflows'][key]['components'].insert(key, imageComponent)
+        try:
+            self.internalPlist['workflows'][key]['components'].insert(key, imageComponent)
+        except IndexError:
+            print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
+            return 22
         self.show_workflow(name)
         return 0
     
@@ -305,7 +331,11 @@ class ImagrConfigPlist():
             # A name was provided that can't be cast to an int
             key = self.findWorkflowIndexByName(args[0])
             name = [ args[0] ]
-        self.internalPlist['workflows'][key]['components'].insert(key, packageComponent)
+        try:
+            self.internalPlist['workflows'][key]['components'].insert(key, packageComponent)
+        except IndexError:
+            print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
+            return 22
         self.show_workflow(name)
         return 0
     
@@ -325,7 +355,11 @@ class ImagrConfigPlist():
             # A name was provided that can't be cast to an int
             key = self.findWorkflowIndexByName(args[0])
             name = [ args[0] ]
-        self.internalPlist['workflows'][key]['components'].insert(key, computerNameComponent)
+        try:
+            self.internalPlist['workflows'][key]['components'].insert(key, computerNameComponent)
+        except IndexError:
+            print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
+            return 22
         self.show_workflow(name)
         return 0
     
@@ -345,7 +379,11 @@ class ImagrConfigPlist():
             # A name was provided that can't be cast to an int
             key = self.findWorkflowIndexByName(args[0])
             name = [ args[0] ]
-        self.internalPlist['workflows'][key]['components'].insert(key, scriptComponent)
+        try:
+            self.internalPlist['workflows'][key]['components'].insert(key, scriptComponent)
+        except IndexError:
+            print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
+            return 22
         self.show_workflow(name)
         return 0
 
