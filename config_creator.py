@@ -53,14 +53,13 @@ class ImagrConfigPlist():
     
     def synchronize(self):
         """Writes the current plist to disk"""
-        with open(self.plistPath, 'wb') as outfile:
-            plist = dict()
-            plist['password'] = self.password
-            workflows = list()
-            for workflow in self.workflowDict.keys():
-                workflows.append(workflow)
-            plist['workflows'] = workflows
-            plistlib.writePlist(plist)
+        plist = dict()
+        plist['password'] = self.password
+        workflows = list()
+        for workflow in self.workflowDict.keys():
+            workflows.append(workflow)
+        plist['workflows'] = workflows
+        plistlib.writePlist(plist, self.plistPath)
     
     # Component-type subcommands
     def list_types(self, args):
@@ -304,7 +303,7 @@ def handleSubcommand(args, plist):
     # special case the exit command
     if subcommand == 'exit':
        # we'll do something special here
-       print "GOODBYE!"
+       plist.synchronize()
        sys.exit(0)
 
     if subcommand == 'help':
@@ -375,10 +374,10 @@ def main():
         except (KeyboardInterrupt, EOFError):
             # React to Control-C and Control-D
             print # so we finish off the raw_input line
-            # At some point I'll do something more useful here
+            configPlist.synchronize()
             sys.exit(0)
         args = shlex.split(cmd)
-        print "Args: %s" % args
+        #print "Args: %s" % args
         handleSubcommand(args, configPlist)
 
 if __name__ == '__main__':
