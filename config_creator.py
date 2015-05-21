@@ -40,26 +40,33 @@ class ImagrConfigPlist():
     
     def __init__(self, path):
         if os.path.exists(path):
-            plist = plistlib.readPlist(path)
-            self.workflowDict = dict()
-            self.password = plist.get('password')
-            for workflow in plist.get('workflows'):
-                self.workflowDict[str(workflow.get('name'))] = workflow  #In other words, self.workflowDict['Sup']['name'] == 'Sup'
+            self.internalPlist = plistlib.readPlist(path)
         else:
-            self.password = ''
-            self.workflows = list()
-            self.workflowDict = dict()
+            self.internalPlist = { 'password':'', 'workflows':[] }
         self.plistPath = path
     
     def synchronize(self):
         """Writes the current plist to disk"""
-        plist = dict()
-        plist['password'] = self.password
-        workflows = list()
-        for workflow in self.workflowDict.keys():
-            workflows.append(workflow)
-        plist['workflows'] = workflows
-        plistlib.writePlist(plist, self.plistPath)
+        plistlib.writePlist(self.internalPlist, self.plistPath)
+    
+    def findWorkflowIndexByName(self, name):
+        """Return the workflow index that matches a given name"""
+        index = 0
+        for workflow in self.internalPlist.get('workflows'):
+            if workflow.get('name') == name:
+                return index
+            index += 1
+        return -1
+    
+    def findWorkflowNameByIndex(self, index):
+        """Return the workflow name that matches a given index"""
+        return self.internalPlist['workflows'][index]['name']
+
+    def replaceWorkflowByName(self, newWorkflow, name):
+        """Replace the workflow (dict) that matches a given name with new workflow"""
+        for workflow in self.internalPlist.get('workflows'):
+            if workflow.get('name') == name:
+                workflow = newWorkflow
     
     # Component-type subcommands
     def list_types(self, args):
@@ -74,13 +81,12 @@ class ImagrConfigPlist():
         """Returns a list of possible workflowComponentTypes"""
         return self.workflowComponentTypes.keys()
     
-    def getWorkflows(self):
-        """Returns a list of workflows in the plist"""
-        return self.workflows
-    
     def getWorkflowNames(self):
         """Returns a list of names of workflows in the plist"""
-        return self.workflowDict.keys()
+        nameList = list()
+        for workflow in self.internalPlist['workflows']:
+            nameList.append(workflow['name'])
+        return nameList
     
     # Workflow subcommands
     def display_workflows(self, args):
@@ -90,41 +96,58 @@ class ImagrConfigPlist():
             print >> sys.stderr, 'Usage: display-workflows'
             return 22 # Invalid argument
         workflows = list()
-        for workflow in self.workflowDict.keys():
+        for workflow in self.internalPlist.get('workflows'):
             workflows.append(workflow)
-        pprint.pprint(workflows)
+        for i, elem in enumerate(self.originalPlist['workflows']):
+            print '{0}: {1}'.format(i, elem)
         return 0
     
     def add_workflow(self, args):
-        """Adds a new workflow to the list of workflows"""
-        if len(args) != 1:
-            print >> sys.stderr, 'Usage: add-workflow <workflowName>'
+        """Adds a new workflow to the list of workflows at index. Index defaults to end of workflow list"""
+        if len(args) < 1 and len(args) > 2:
+            print >> sys.stderr, 'Usage: add-workflow <workflowName> [<index>]'
             return 22
+        index = len(self.internalPlist['workflows'])
+        if len(args) == 2:
+            index = int(args[1])
+        # validate that the name isn't being reused
+        for workflow in self.internalPlist.get('workflows'):
+            if workflow['name'] == args[0]:
+                print >> sys.stderr, 'Error: name is already in use. Workflow names must be unique.'
+                return 22
         workflow = dict()
         workflow['name'] = args[0]
         workflow['description'] = ''
         workflow['restart_action'] = 'none'
         workflow['bless_target'] = False
         workflow['components'] = list()
-        self.workflowDict[args[0]] = workflow
-        self.show_workflow(args)
+        self.internalPlist['workflows'].insert(index, workflow)
+        self.show_workflow(args[0:1])
         return 0
     
     def remove_workflow(self, args):
-        """Removes workflow with given name from list"""
+        """Removes workflow with given name or index from list"""
         if len(args) != 1:
-            print >> sys.stderr, 'Usage: remove-workflow <workflowName>'
+            print >> sys.stderr, 'Usage: remove-workflow <workflowName or index>'
             return 22
-        del self.workflowDict[args[0]]
+        try:
+            key = int(args[0])
+            # If an index is provided, it can be cast to an int
+        except ValueError:
+            # A name was provided that can't be cast to an int
+            key = self.findWorkflowIndexByName(args[0])
+        del self.internalPlist['workflows'][key]
         self.display_workflows([])
         return 0
     
     def show_workflow(self, args):
         """Shows a workflow with a given name"""
         if len(args) != 1:
-            print >> sys.stderr, 'Usage: show-workflow <workflowName>'
+            print >> sys.stderr, 'Usage: show-workflow <workflowName or index>'
             return 22
-        pprint.pprint(self.workflowDict[args[0]])
+        for workflow in self.internalPlist.get('workflows'):
+            if workflow.get('name') == args[0]:
+                pprint.pprint(workflow)
         return 0
     
     # Password subcommands
@@ -134,7 +157,7 @@ class ImagrConfigPlist():
         if len(args) != 0:
             print >> sys.stderr, 'Usage: show-password'
             return 22 # Invalid argument
-        print self.password
+        print self.internalPlist.get('password')
         return 0
     
     def new_password(self, args):
@@ -142,7 +165,7 @@ class ImagrConfigPlist():
         if len(args) != 1:
             print >> sys.stderr, 'Usage: new-password <password>'
             return 22
-        self.password = hashlib.sha512(str(args[0])).hexdigest()
+        self.originalPlist['password'] = hashlib.sha512(str(args[0])).hexdigest()
         self.show_password([])
         return 0
     
@@ -150,7 +173,7 @@ class ImagrConfigPlist():
     def set_restart_action(self, args):
         """Sets a restart action for the given workflow"""
         if len(args) > 2 or len(args) == 0:
-            print >> sys.stderr, 'Usage: set-restart-action <workflowName> <action>'
+            print >> sys.stderr, 'Usage: set-restart-action <workflowName or index> <action>'
             return 22
         if len(args) == 1:
             action = 'none'
@@ -159,58 +182,102 @@ class ImagrConfigPlist():
                 print >> sys.stderr, 'Usage: set-restart-action must have \'restart\', \'shutdown\', or \'none\''
                 return 22
             action = args[1]
-        self.workflowDict[args[0]]['restart_action'] = action
-        self.show_workflow(args[0:1])
+        try:
+            key = int(args[0])
+            # If an index is provided, it can be cast to an int
+            name = self.findWorkflowNameByIndex(key)
+        except ValueError:
+            # A name was provided that can't be cast to an int
+            key = self.findWorkflowIndexByName(args[0])
+            name = [ args[0] ]
+        self.internalPlist['workflows'][key]['restart_action'] = action
+        self.show_workflow(name)
         return 0
     
     # Bless subcommands
     def set_bless_target(self, args):
         """Sets bless to True or False for the given workflow"""
         if len(args) != 2:
-            print >> sys.stderr, 'Usage: set-bless-target <workflowName> <True/False>'
+            print >> sys.stderr, 'Usage: set-bless-target <workflowName or index> <True/False>'
             return 22
-        self.workflowDict[args[0]]['bless_target'] = bool(args[1])
+        try:
+            key = int(args[0])
+            # If an index is provided, it can be cast to an int
+            name = self.findWorkflowNameByIndex(key)
+        except ValueError:
+            # A name was provided that can't be cast to an int
+            key = self.findWorkflowIndexByName(args[0])
+            name = [ args[0] ]
+        self.originalPlist['workflows'][key]['bless_target'] = bool(args[1])
+        self.show_workflow(name)
+        return 0
     
     # Description subcommands
     def set_description(self, args):
         """Sets description for the given workflow"""
         if len(args) != 2:
-            print >> sys.stderr, 'Usage: set-description <workflowName> <description>'
+            print >> sys.stderr, 'Usage: set-description <workflowName or index> <description>'
             return 22
-        self.workflowDict[args[0]]['description'] = args[1]
-        self.show_workflow(args[0:1])
+        try:
+            key = int(args[0])
+            # If an index is provided, it can be cast to an int
+            name = self.findWorkflowNameByIndex(key)
+        except ValueError:
+            # A name was provided that can't be cast to an int
+            key = self.findWorkflowIndexByName(args[0])
+            name = [ args[0] ]
+        self.originalPlist['workflows'][key]['description'] = args[1]
+        self.show_workflow(name)
         return 0
-    
-    # Component-related functions that are not subcommands
-    def getComponents(self, workflowName):
-        """Returns a list of components for a given workflow"""
-        return self.workflowDict[workflowName]['components']
     
     # Component subcommands
     def display_components(self, args):
         """Displays a pretty-print list of components for a given workflow"""
         if len(args) != 1:
-            print >> sys.stderr, 'Usage: display_components <workflowName>'
+            print >> sys.stderr, 'Usage: display_components <workflowName or index>'
             return 22
-        #pprint.pprint(self.workflowDict[args[0]]['components'])
-        for i, elem in enumerate(self.workflowDict[args[0]]['components']):
+        try:
+            key = int(args[0])
+            # If an index is provided, it can be cast to an int
+        except ValueError:
+            # A name was provided that can't be cast to an int
+            key = self.findWorkflowIndexByName(args[0])
+        for i, elem in enumerate(self.originalPlist['workflows'][key]['components']):
             print '{0}: {1}'.format(i, elem)
+        return 0
     
     def remove_component(self, args):
         """Removes a component at index from workflow"""
         if len(args) != 2:
-            print >> sys.stderr, 'Usage: remove-component <workflowName> <index>'
+            print >> sys.stderr, 'Usage: remove-component <workflowName or index> <index>'
             return 22
-        del self.workflowDict[args[0]]['components'][int(args[1])]
+        try:
+            key = int(args[0])
+            # If an index is provided, it can be cast to an int
+        except ValueError:
+            # A name was provided that can't be cast to an int
+            key = self.findWorkflowIndexByName(args[0])
+        del self.originalPlist['workflows'][key]['components'][int(args[1])]
+        return 0
     
     def add_image_component(self, args):
         """Adds an Image task at index with URL for a workflow"""
         if len(args) != 3:
-            print >> sys.stderr, 'Usage: add-image-component <workflowName> <index> <url>'
+            print >> sys.stderr, 'Usage: add-image-component <workflowName or index> <index> <url>'
             return 22
         imageComponent = self.workflowComponentTypes['image']
         imageComponent['url'] = args[2]
-        self.workflowDict[args[0]]['components'].insert(args[1], imageComponent)
+        try:
+            key = int(args[0])
+            # If an index is provided, it can be cast to an int
+            name = self.findWorkflowNameByIndex(key)
+        except ValueError:
+            # A name was provided that can't be cast to an int
+            key = self.findWorkflowIndexByName(args[0])
+            name = [ args[0] ]
+        self.originalPlist['workflows'][key]['components'].insert(args[1], imageComponent)
+        self.show_workflow(name)
+        return 0
     
     def add_package_component(self, args):
         """Adds a Package task at index with URL, first_boot for workflow"""
@@ -220,7 +287,17 @@ class ImagrConfigPlist():
         packageComponent = self.workflowComponentTypes['package']
         packageComponent['url'] = args[2]
         packageComponent['first_boot'] = args[3]
-        self.workflowDict[args[0]]['components'].insert(args[1], packageComponent)
+        try:
+            key = int(args[0])
+            # If an index is provided, it can be cast to an int
+            name = self.findWorkflowNameByIndex(key)
+        except ValueError:
+            # A name was provided that can't be cast to an int
+            key = self.findWorkflowIndexByName(args[0])
+            name = [ args[0] ]
+        self.originalPlist['workflows'][key]['components'].insert(args[1], packageComponent)
+        self.show_workflow(name)
+        return 0
     
     def add_computername_component(self, args):
         """Adds a ComputerName task at index with use_serial and auto for workflow"""
@@ -230,7 +307,17 @@ class ImagrConfigPlist():
         computerNameComponent = self.workflowComponentTypes['computername']
         computerNameComponent['use_serial'] = args[2]
         computerNameComponent['auto'] = args[3]
-        self.workflowDict[args[0]]['components'].insert(args[1], computerNameComponent)
+        try:
+            key = int(args[0])
+            # If an index is provided, it can be cast to an int
+            name = self.findWorkflowNameByIndex(key)
+        except ValueError:
+            # A name was provided that can't be cast to an int
+            key = self.findWorkflowIndexByName(args[0])
+            name = [ args[0] ]
+        self.originalPlist['workflows'][key]['components'].insert(args[1], computerNameComponent)
+        self.show_workflow(name)
+        return 0
     
     def add_script_component(self, args):
         """Adds a Script component at index with content for workflow"""
@@ -240,7 +327,17 @@ class ImagrConfigPlist():
         scriptComponent = self.workflowComponentTypes['script']
         scriptComponent['content'] = readfile(args[2])
         scriptComponent['first_boot'] = args[3]
-        self.workflowDict[args[0]]['components'].insert(args[1], scriptComponent)
+        try:
+            key = int(args[0])
+            # If an index is provided, it can be cast to an int
+            name = self.findWorkflowNameByIndex(key)
+        except ValueError:
+            # A name was provided that can't be cast to an int
+            key = self.findWorkflowIndexByName(args[0])
+            name = [ args[0] ]
+        self.originalPlist['workflows'][key]['components'].insert(args[1], scriptComponent)
+        self.show_workflow(name)
+        return 0
 
 
 # Generic helper functions for autocomplete, stolen from Munki manifestutil
@@ -377,7 +474,7 @@ def main():
             configPlist.synchronize()
             sys.exit(0)
         args = shlex.split(cmd)
-        #print "Args: %s" % args
+        print "Args: %s" % args
         handleSubcommand(args, configPlist)
 
 if __name__ == '__main__':
