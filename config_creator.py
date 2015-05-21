@@ -29,6 +29,11 @@ def readfile(path):
         print >> sys.stderr, "Couldn't read %s" % path
         return ""
 
+# Helper
+
+def stringToBool(theString):
+    return theString.lower() in ("yes", "true", "t", "1"):
+
 # Imagr Config Plist class
 
 class ImagrConfigPlist():
