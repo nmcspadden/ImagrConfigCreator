@@ -16,6 +16,19 @@ import fnmatch
 #    import plistlib
 import FoundationPlist as plistlib
 
+# Stolen from Munki/makepkginfo
+
+def readfile(path):
+    '''Reads file at path. Returns a string.'''
+    try:
+        fileobject = open(os.path.expanduser(path), mode='r', buffering=1)
+        data = fileobject.read()
+        fileobject.close()
+        return data
+    except (OSError, IOError):
+        print >> sys.stderr, "Couldn't read %s" % path
+        return ""
+
 # Imagr Config Plist class
 
 class ImagrConfigPlist():
@@ -226,7 +239,7 @@ class ImagrConfigPlist():
             print >> sys.stderr, 'Usage: add-image-component <workflowName> <index> <path to script> <first_boot t/f>'
             return 22
         scriptComponent = self.workflowComponentTypes['script']
-        scriptComponent['content'] = args[2] #this should be a path to a script file - do this later
+        scriptComponent['content'] = readfile(args[2])
         scriptComponent['first_boot'] = args[3]
         self.workflowDict[args[0]]['components'].insert(args[1], scriptComponent)
 
