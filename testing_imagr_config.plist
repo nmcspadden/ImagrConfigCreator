@@ -97,7 +97,7 @@
 			<key>name</key>
 			<string>Attempted Formatting</string>
 			<key>description</key>
-			<string>Partition into "Hell" + "Yeah", set "Hell" as target, install package</string>
+			<string>Partition into &quot;Hell&quot; + &quot;Yeah&quot;, set &quot;Hell&quot; as target, install package</string>
 			<key>restart_action</key>
 			<string>none</string>
 			<key>bless_target</key>
