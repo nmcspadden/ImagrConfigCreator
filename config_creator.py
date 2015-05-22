@@ -81,7 +81,7 @@ class ImagrConfigPlist():
         """Returns a list of names of workflows in the plist"""
         nameList = list()
         for workflow in self.internalPlist['workflows']:
-            nameList.append(workflow['name'])
+            nameList.append(str(workflow['name']))
         return nameList
     
     # Workflow subcommands
@@ -291,26 +291,55 @@ class ImagrConfigPlist():
     
     def add_image_component(self, args):
         """Adds an Image task at index with URL for a workflow. If no index is specified, defaults to end"""
-        if len(args) < 2:
-            print >> sys.stderr, 'Usage: add-image-component <workflowName or index> <url> [<index>]'
-            return 22
-        imageComponent = self.workflowComponentTypes['image']
-        imageComponent['url'] = args[1]
+        p = argparse.ArgumentParser(prog='add-image-component', 
+                                    description='''add-image-component WORKFLOW URL INDEX
+            Adds an Image task to the component list of the WORKFLOW from URL. If INDEX is specified,
+            task is added at that INDEX, otherwise added to end of list''')
+        p.add_argument('--workflow',
+                    metavar='WORKFLOW NAME OR INDEX',
+                    help='''quoted name or index number of target workflow''',
+                    choices=self.getWorkflowNames(),
+                    required = True)
+        p.add_argument('--url',
+                    metavar='URL',
+                    help='''URL of image to apply''',
+                    required = True)
+        p.add_argument('--index',
+                    metavar='INDEX',
+                    help='''where in the component list the task will go - defaults to end of list''',
+                    default = False)
         try:
-            key = int(args[0])
+            arguments = p.parse_args(args)
+        except argparse.ArgumentError, errmsg:
+            print >> sys.stderr, str(errmsg)
+            return 22 # Invalid argument
+        
+        if not arguments.workflow or not arguments.url:
+            p.print_help()
+        imageComponent = self.workflowComponentTypes['image']
+        imageComponent['url'] = arguments.url
+        imageComponent['type'] = 'image'
+        try:
+            key = int(arguments.workflow)
             # If an index is provided, it can be cast to an int
             name = self.findWorkflowNameByIndex(key)
         except ValueError:
             # A name was provided that can't be cast to an int
-            key = self.findWorkflowIndexByName(args[0])
-            name = [ args[0] ]
+            key = self.findWorkflowIndexByName(arguments.workflow)
+            name = [ arguments.workflow ]
         try:
-            index = len(self.internalPlist['workflows'][key]['components'])
-            if len(args) == 3:
-                index = int(args[2])
+            
+            print "Arguments.index: %s" % arguments.index
+            if arguments.index == False: #this means one wasn't specified
+                index = len(self.internalPlist['workflows'][key]['components'])
+            else:
+                index = int(arguments.index)
+            print "Index: %s" % index
+            print "Before insert: %s" % self.internalPlist['workflows'][key]['components']
             self.internalPlist['workflows'][key]['components'].insert(index, imageComponent)
+            print "After insert: %s" % self.internalPlist['workflows'][key]['components']
         except (IndexError, TypeError):
-            print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
+            print >> sys.stderr, 'Error: No workflow found at %s' % arguments.workflow
             return 22
         self.show_workflow(name)
         return 0
@@ -323,6 +352,7 @@ class ImagrConfigPlist():
         packageComponent = self.workflowComponentTypes['package']
         packageComponent['url'] = args[1]
         packageComponent['first_boot'] = stringToBool(args[2])
+        packageComponent['type'] = 'package'
         try:
             key = int(args[0])
             # If an index is provided, it can be cast to an int
@@ -350,6 +380,7 @@ class ImagrConfigPlist():
         computerNameComponent = self.workflowComponentTypes['computername']
         computerNameComponent['use_serial'] = stringToBool(args[1])
         computerNameComponent['auto'] = stringToBool(args[2])
+        computerNameComponent['type'] = 'computer_name'
         try:
             key = int(args[0])
             # If an index is provided, it can be cast to an int
@@ -377,6 +408,7 @@ class ImagrConfigPlist():
         scriptComponent = self.workflowComponentTypes['script']
         scriptComponent['content'] = readfile(args[1])
         scriptComponent['first_boot'] = stringToBool(args[2])
+        scriptComponent['type'] = 'script'
         try:
             key = int(args[0])
             # If an index is provided, it can be cast to an int
@@ -528,7 +560,6 @@ def main():
         except (KeyboardInterrupt, EOFError):
             # React to Control-C and Control-D
             print # so we finish off the raw_input line
-            configPlist.synchronize()
             sys.exit(0)
         args = shlex.split(cmd)
         #print "Args: %s" % args
