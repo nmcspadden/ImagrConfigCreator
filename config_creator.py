@@ -477,7 +477,8 @@ def handleSubcommand(args, plist):
         subcommand_function = getattr(plist, subcommand)
         return subcommand_function(args[1:])
     except (TypeError, KeyError, AttributeError), errmsg:
-        print >> sys.stderr, 'Unknown subcommand: %s: %s' % (subcommand, errmsg)
+#        print >> sys.stderr, 'Unknown subcommand: %s: %s' % (subcommand, errmsg)
+        print >> sys.stderr, 'Unknown subcommand: %s' % subcommand
         help(args)
         return 2
 
