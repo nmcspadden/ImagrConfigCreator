@@ -72,14 +72,6 @@ class ImagrConfigPlist():
             if workflow.get('name') == name:
                 workflow = newWorkflow
     
-    # Component-type subcommands
-    def list_types(self, args):
-        if len(args) != 0:
-            print >> sys.stderr, 'Usage: display-workflows'
-            return 22 # Invalid argument
-        pprint.pprint(self.workflowComponentTypes)
-        return 0
-    
     # Workflow-related functions that are not subcommands    
     def getWorkflowComponentTypes(self):
         """Returns a list of possible workflowComponentTypes"""
@@ -519,7 +511,6 @@ def main():
         'add-script-component':  'workflows',    # add-image-component <workflow> <index> <content> <first_boot t/f>
         'remove-component':     'components',   # remove-component <index> <workflow>
         'display-components':   'components',   # display-components <workflow>
-        'list-types':           'components',   
         'exit':                 'default',
         'help':                 'default',
         } 
