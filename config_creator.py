@@ -294,7 +294,7 @@ class ImagrConfigPlist():
         p = argparse.ArgumentParser(prog='add-image-component', 
                                     description='''add-image-component WORKFLOW URL INDEX
             Adds an Image task to the component list of the WORKFLOW from URL. If INDEX is specified,
-            task is added at that INDEX, otherwise added to end of list''')
+            task is added at that INDEX, otherwise added to end of list.''')
         p.add_argument('--workflow',
                     metavar='WORKFLOW NAME OR INDEX',
                     help='''quoted name or index number of target workflow''',
@@ -336,6 +336,7 @@ class ImagrConfigPlist():
                 index = int(arguments.index)
             print "Index: %s" % index
             print "Before insert: %s" % self.internalPlist['workflows'][key]['components']
+            # there should be a check here to make sure we only have one image component per workflow
             self.internalPlist['workflows'][key]['components'].insert(index, imageComponent)
             print "After insert: %s" % self.internalPlist['workflows'][key]['components']
         except (IndexError, TypeError):
@@ -346,6 +347,36 @@ class ImagrConfigPlist():
     
     def add_package_component(self, args):
         """Adds a Package task at index with URL, first_boot for workflow"""
+        p = argparse.ArgumentParser(prog='add-package-component',
+                                    description='''add-package-component WORKFLOW URL FIRSTBOOT INDEX
+            Adds a Package task to the component list of the WORKFLOW from URL, with FIRST_BOOT setting.
+            If INDEX is specified, task is added at that INDEX, otherwise added to end of list.''')
+        p.add_argument('--workflow',
+                    metavar='WORKFLOW NAME OR INDEX',
+                    help='''quoted name or index number of target workflow''',
+                    choices=self.getWorkflowNames(),
+                    required = True)
+        p.add_argument('--url',
+                    metavar='URL',
+                    help='''URL of image to apply''',
+                    required = True)
+        p.add_argument('--firstboot',
+                    metavar='FIRSTBOOT',
+                    help='''true/false for package running at first boot''',
+                    required = True)
+        p.add_argument('--index',
+                    metavar='INDEX',
+                    help='''where in the component list the task will go - defaults to end of list''',
+                    default = False)
+        try:
+            arguments = p.parse_args(args)
+        except argparse.ArgumentError, errmsg:
+            print >> sys.stderr, str(errmsg)
+            return 22 # Invalid argument
+
+        if not arguments.workflow or not arguments.url:
+            p.print_help()
+
         if len(args) < 3:
             print >> sys.stderr, 'Usage: add-package-component <workflowName or index> <url> <first_boot t/f> [<index>]'
             return 22
