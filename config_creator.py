@@ -32,7 +32,7 @@ def readfile(path):
 # Helper
 
 def stringToBool(theString):
-    return theString.lower() in ("yes", "true", "t", "1"):
+    return theString.lower() in ("yes", "true", "t", "1")
 
 # Imagr Config Plist class
 
@@ -230,7 +230,7 @@ class ImagrConfigPlist():
             key = self.findWorkflowIndexByName(args[0])
             name = [ args[0] ]
         try:
-            self.internalPlist['workflows'][key]['bless_target'] = bool(args[1])
+            self.internalPlist['workflows'][key]['bless_target'] = stringToBool(args[1])
         except (IndexError, TypeError):
             print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
             return 22
@@ -316,7 +316,6 @@ class ImagrConfigPlist():
             index = len(self.internalPlist['workflows'][key]['components'])
             if len(args) == 3:
                 index = int(args[2])
-            print "Index: %s" % index
             self.internalPlist['workflows'][key]['components'].insert(index, imageComponent)
         except (IndexError, TypeError):
             print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
@@ -327,11 +326,11 @@ class ImagrConfigPlist():
     def add_package_component(self, args):
         """Adds a Package task at index with URL, first_boot for workflow"""
         if len(args) < 3:
-            print >> sys.stderr, 'Usage: add-package-component <workflowName> <url> <first_boot t/f> [<index>]'
+            print >> sys.stderr, 'Usage: add-package-component <workflowName or index> <url> <first_boot t/f> [<index>]'
             return 22
         packageComponent = self.workflowComponentTypes['package']
         packageComponent['url'] = args[1]
-        packageComponent['first_boot'] = bool(args[2])
+        packageComponent['first_boot'] = stringToBool(args[2])
         try:
             key = int(args[0])
             # If an index is provided, it can be cast to an int
@@ -354,11 +353,11 @@ class ImagrConfigPlist():
     def add_computername_component(self, args):
         """Adds a ComputerName task at index with use_serial and auto for workflow"""
         if len(args) < 3:
-            print >> sys.stderr, 'Usage: add-computername-component <workflowName> <use_serial t/f> <auto t/f> [<index>]'
+            print >> sys.stderr, 'Usage: add-computername-component <workflowName or index> <use_serial t/f> <auto t/f> [<index>]'
             return 22
         computerNameComponent = self.workflowComponentTypes['computername']
-        computerNameComponent['use_serial'] = bool(args[1])
-        computerNameComponent['auto'] = bool(args[2])
+        computerNameComponent['use_serial'] = stringToBool(args[1])
+        computerNameComponent['auto'] = stringToBool(args[2])
         try:
             key = int(args[0])
             # If an index is provided, it can be cast to an int
@@ -385,7 +384,7 @@ class ImagrConfigPlist():
             return 22
         scriptComponent = self.workflowComponentTypes['script']
         scriptComponent['content'] = readfile(args[1])
-        scriptComponent['first_boot'] = bool(args[2])
+        scriptComponent['first_boot'] = stringToBool(args[2])
         try:
             key = int(args[0])
             # If an index is provided, it can be cast to an int
@@ -540,7 +539,7 @@ def main():
             configPlist.synchronize()
             sys.exit(0)
         args = shlex.split(cmd)
-        print "Args: %s" % args
+        #print "Args: %s" % args
         handleSubcommand(args, configPlist)
 
 if __name__ == '__main__':
