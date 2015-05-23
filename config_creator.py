@@ -296,6 +296,7 @@ class ImagrConfigPlist():
             return 22
         imageComponent = self.workflowComponentTypes['image']
         imageComponent['url'] = args[1]
+        imageComponent['type'] = 'image'
         try:
             key = int(args[0])
             # If an index is provided, it can be cast to an int
@@ -323,6 +324,7 @@ class ImagrConfigPlist():
         packageComponent = self.workflowComponentTypes['package']
         packageComponent['url'] = args[1]
         packageComponent['first_boot'] = stringToBool(args[2])
+        packageComponent['type'] = 'package'
         try:
             key = int(args[0])
             # If an index is provided, it can be cast to an int
@@ -350,6 +352,7 @@ class ImagrConfigPlist():
         computerNameComponent = self.workflowComponentTypes['computername']
         computerNameComponent['use_serial'] = stringToBool(args[1])
         computerNameComponent['auto'] = stringToBool(args[2])
+        computerNameComponent['type'] = 'computername'
         try:
             key = int(args[0])
             # If an index is provided, it can be cast to an int
@@ -377,6 +380,7 @@ class ImagrConfigPlist():
         scriptComponent = self.workflowComponentTypes['script']
         scriptComponent['content'] = readfile(args[1])
         scriptComponent['first_boot'] = stringToBool(args[2])
+        scriptComponent['type'] = 'script'
         try:
             key = int(args[0])
             # If an index is provided, it can be cast to an int
