@@ -218,7 +218,7 @@ class ImagrConfigPlist():
         """Sets a restart action for the given workflow"""
         p = argparse.ArgumentParser(prog='set-restart-action', 
                                     description='''set-restart-action --workflow WORKFLOW --restart RESTART
-            Sets a restart action for WORKFLOW to RESTART.''')
+            Sets a restart action for WORKFLOW to RESTART. If --restart is not specified, it defaults to \'none\'.''')
         p.add_argument('--workflow',
                     metavar='WORKFLOW NAME OR INDEX',
                     help='''quoted name or index number of target workflow''',
@@ -228,7 +228,7 @@ class ImagrConfigPlist():
                     metavar='RESTART',
                     help='''restart action to use: restart, shutdown, or none''',
                     choices=['restart', 'shutdown', 'none'],
-                    required = True)
+                    default = 'none')
         try:
             arguments = p.parse_args(args)
         except argparse.ArgumentError, errmsg:
@@ -696,7 +696,7 @@ def main():
             sys.exit(-1)
     else:
         # file does not exist, we'll save it on exit
-        configPlist = ImagrConfigPlist()
+        configPlist = ImagrConfigPlist(plistArgs.plist)
     
     # List of commands mapped to data types that they'll autocomplete with
     cmds = {
