@@ -84,62 +84,106 @@ class ImagrConfigPlist():
     
     def add_workflow(self, args):
         """Adds a new workflow to the list of workflows at index. Index defaults to end of workflow list"""
-        if len(args) < 1 or len(args) > 2:
-            print >> sys.stderr, 'Usage: add-workflow <workflowName> [<index>]'
+        p = argparse.ArgumentParser(prog='add-workflow', 
+                                    description='''add-workflow --workflow WORKFLOW --index INDEX
+            Adds a new workflow with NAME to workflow list. If INDEX is specified,
+            workflow is added at that INDEX, otherwise added to end of list.''')
+        p.add_argument('--workflow',
+                    metavar='WORKFLOW',
+                    help='''quoted name of new workflow''',
+                    required = True)
+        p.add_argument('--index',
+                    metavar='INDEX',
+                    help='''where in the component list the task will go - defaults to end of list''',
+                    default = False)
+        try:
+            arguments = p.parse_args(args)
+        except argparse.ArgumentError, errmsg:
+            print >> sys.stderr, str(errmsg)
+            return 22 # Invalid argument
+        except SystemExit:
             return 22
-        index = len(self.internalPlist['workflows'])
-        if len(args) == 2:
-            index = int(args[1])
         # validate that the name isn't being reused
-        for workflow in self.internalPlist.get('workflows'):
-            if workflow['name'] == args[0]:
+        for tempworkflow in self.internalPlist.get('workflows'):
+            if tempworkflow['name'] == arguments.workflow:
                 print >> sys.stderr, 'Error: name is already in use. Workflow names must be unique.'
                 return 22
+        if arguments.index == False: #this means one wasn't specified
+            index = len(self.internalPlist['workflows'])
+        else:
+            index = int(arguments.index)
         workflow = dict()
-        workflow['name'] = args[0]
+        workflow['name'] = arguments.workflow
         workflow['description'] = ''
         workflow['restart_action'] = 'none'
         workflow['bless_target'] = False
         workflow['components'] = list()
         self.internalPlist['workflows'].insert(index, workflow)
-        self.show_workflow(args[0:1])
+        self.show_workflow(args)
         return 0
     
     def remove_workflow(self, args):
         """Removes workflow with given name or index from list"""
-        if len(args) != 1:
-            print >> sys.stderr, 'Usage: remove-workflow <workflowName or index>'
+        p = argparse.ArgumentParser(prog='remove-workflow', 
+                                    description='''remove-workflow --workflow WORKFLOW NAME OR INDEX
+            Removes workflow WORKFLOW from workflow list.''')
+        p.add_argument('--workflow',
+                    metavar='WORKFLOW NAME OR INDEX',
+                    help='''quoted name or index number of target workflow''',
+                    choices=self.getWorkflowNames(),
+                    required = True)
+        try:
+            arguments = p.parse_args(args)
+        except argparse.ArgumentError, errmsg:
+            print >> sys.stderr, str(errmsg)
+            return 22 # Invalid argument
+        except SystemExit:
             return 22
         try:
-            key = int(args[0])
+            key = int(arguments.workflow)
             # If an index is provided, it can be cast to an int
         except ValueError:
             # A name was provided that can't be cast to an int
-            key = self.findWorkflowIndexByName(args[0])
+            key = self.findWorkflowIndexByName(arguments.workflow)
         try:
             del self.internalPlist['workflows'][key]
         except (IndexError, TypeError):
             print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
             return 22
-        self.display_workflows([])
+        print "Removed workflow '%s' from list." % arguments.workflow
+        print "Remaining workflows:"
+        pprint.pprint(self.getWorkflowNames())
         return 0
     
     def show_workflow(self, args):
         """Shows a workflow with a given name or index"""
-        if len(args) != 1:
-            print >> sys.stderr, 'Usage: show-workflow <workflowName or index>'
+        p = argparse.ArgumentParser(prog='show-workflow', 
+                                    description='''show-workflow --workflow WORKFLOW NAME OR INDEX
+            Displays the contents of WORKFLOW.''')
+        p.add_argument('--workflow',
+                    metavar='WORKFLOW NAME OR INDEX',
+                    help='''quoted name or index number of target workflow''',
+                    choices=self.getWorkflowNames(),
+                    required = True)
+        try:
+            arguments = p.parse_args(args)
+        except argparse.ArgumentError, errmsg:
+            print >> sys.stderr, str(errmsg)
+            return 22 # Invalid argument
+        except SystemExit:
             return 22
         try:
-            key = int(args[0])
+            key = int(arguments.workflow)
             # If an index is provided, it can be cast to an int
         except ValueError:
             # A name was provided that can't be cast to an int
-            key = self.findWorkflowIndexByName(args[0])
+            key = self.findWorkflowIndexByName(arguments.workflow)
         try:
+            print "Workflow '%s':" % arguments.workflow
             pprint.pprint(self.internalPlist['workflows'][key])
         except (IndexError, TypeError):
             # If it gets here, no workflow by that name or index was found.
-            print >> sys.stderr, 'No workflow found at %s: ' % args[0]
+            print >> sys.stderr, 'No workflow found at %s: ' % arguments.workflow
             return 22
         return 0
     
