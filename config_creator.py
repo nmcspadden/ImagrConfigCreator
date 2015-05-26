@@ -85,13 +85,12 @@ class ImagrConfigPlist():
     def add_workflow(self, args):
         """Adds a new workflow to the list of workflows at index. Index defaults to end of workflow list"""
         p = argparse.ArgumentParser(prog='add-workflow', 
-                                    description='''add-workflow --workflow WORKFLOW --index INDEX
+                                    description='''add-workflow NAME --index INDEX
             Adds a new workflow with NAME to workflow list. If INDEX is specified,
             workflow is added at that INDEX, otherwise added to end of list.''')
-        p.add_argument('--workflow',
-                    metavar='WORKFLOW',
-                    help='''quoted name of new workflow''',
-                    required = True)
+        p.add_argument('name',
+                    metavar='NAME',
+                    help='''quoted name of new workflow''')
         p.add_argument('--index',
                     metavar='INDEX',
                     help='''where in the component list the task will go - defaults to end of list''',
@@ -105,7 +104,7 @@ class ImagrConfigPlist():
             return 22
         # validate that the name isn't being reused
         for tempworkflow in self.internalPlist.get('workflows'):
-            if tempworkflow['name'] == arguments.workflow:
+            if tempworkflow['name'] == arguments.name:
                 print >> sys.stderr, 'Error: name is already in use. Workflow names must be unique.'
                 return 22
         if arguments.index == False: #this means one wasn't specified
@@ -113,7 +112,7 @@ class ImagrConfigPlist():
         else:
             index = int(arguments.index)
         workflow = dict()
-        workflow['name'] = arguments.workflow
+        workflow['name'] = arguments.name
         workflow['description'] = ''
         workflow['restart_action'] = 'none'
         workflow['bless_target'] = False
@@ -125,13 +124,12 @@ class ImagrConfigPlist():
     def remove_workflow(self, args):
         """Removes workflow with given name or index from list"""
         p = argparse.ArgumentParser(prog='remove-workflow', 
-                                    description='''remove-workflow --workflow WORKFLOW NAME OR INDEX
+                                    description='''remove-workflow WORKFLOW NAME OR INDEX
             Removes workflow WORKFLOW from workflow list.''')
-        p.add_argument('--workflow',
+        p.add_argument('workflow',
                     metavar='WORKFLOW NAME OR INDEX',
                     help='''quoted name or index number of target workflow''',
-                    choices=self.getWorkflowNames(),
-                    required = True)
+                    choices=self.getWorkflowNames() )
         try:
             arguments = p.parse_args(args)
         except argparse.ArgumentError, errmsg:
@@ -148,7 +146,7 @@ class ImagrConfigPlist():
         try:
             del self.internalPlist['workflows'][key]
         except (IndexError, TypeError):
-            print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
+            print >> sys.stderr, 'Error: No workflow found at %s' % arguments.workflow
             return 22
         print "Removed workflow '%s' from list." % arguments.workflow
         print "Remaining workflows:"
@@ -158,13 +156,12 @@ class ImagrConfigPlist():
     def show_workflow(self, args):
         """Shows a workflow with a given name or index"""
         p = argparse.ArgumentParser(prog='show-workflow', 
-                                    description='''show-workflow --workflow WORKFLOW NAME OR INDEX
+                                    description='''show-workflow WORKFLOW NAME OR INDEX
             Displays the contents of WORKFLOW.''')
-        p.add_argument('--workflow',
+        p.add_argument('workflow',
                     metavar='WORKFLOW NAME OR INDEX',
                     help='''quoted name or index number of target workflow''',
-                    choices=self.getWorkflowNames(),
-                    required = True)
+                    choices=self.getWorkflowNames() )
         try:
             arguments = p.parse_args(args)
         except argparse.ArgumentError, errmsg:
