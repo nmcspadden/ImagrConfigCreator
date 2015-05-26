@@ -315,39 +315,67 @@ class ImagrConfigPlist():
     
     # Component subcommands
     def display_components(self, args):
-        """Displays a pretty-print list of components for a given workflow"""
-        if len(args) != 1:
-            print >> sys.stderr, 'Usage: display_components <workflowName or index>'
+        """Displays a list of components for a given workflow"""
+        p = argparse.ArgumentParser(prog='display-components', 
+                                    description='''display-components WORKFLOW NAME OR INDEX
+            Displays the components of WORKFLOW.''')
+        p.add_argument('workflow',
+                    metavar='WORKFLOW NAME OR INDEX',
+                    help='''quoted name or index number of target workflow''',
+                    choices=self.getWorkflowNames() )
+        try:
+            arguments = p.parse_args(args)
+        except argparse.ArgumentError, errmsg:
+            print >> sys.stderr, str(errmsg)
+            return 22 # Invalid argument
+        except SystemExit:
             return 22
         try:
-            key = int(args[0])
+            key = int(arguments.workflow)
             # If an index is provided, it can be cast to an int
         except ValueError:
             # A name was provided that can't be cast to an int
-            key = self.findWorkflowIndexByName(args[0])
+            key = self.findWorkflowIndexByName(arguments.workflow)
         try:
             for i, elem in enumerate(self.internalPlist['workflows'][key]['components']):
                 print '{0}: {1}'.format(i, elem)
         except (IndexError, TypeError):
-            print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
+            print >> sys.stderr, 'Error: No workflow found at %s' % arguments.workflow
             return 22
         return 0
     
     def remove_component(self, args):
         """Removes a component at index from workflow"""
-        if len(args) != 2:
-            print >> sys.stderr, 'Usage: remove-component <workflowName or index> <index>'
+        p = argparse.ArgumentParser(prog='remove-component', 
+                                    description='''remove-component --workflow WORKFLOW NAME OR INDEX --component INDEX
+            Remove the component at INDEX from WORKFLOW.''')
+        p.add_argument('--workflow',
+                    metavar='WORKFLOW NAME OR INDEX',
+                    help='''quoted name or index number of target workflow''',
+                    choices=self.getWorkflowNames(),
+                    required=True)
+        p.add_argument('--component',
+                    metavar='INDEX',
+                    help='''index of component from list''',
+                    type=int,
+                    required=True)
+        try:
+            arguments = p.parse_args(args)
+        except argparse.ArgumentError, errmsg:
+            print >> sys.stderr, str(errmsg)
+            return 22 # Invalid argument
+        except SystemExit:
             return 22
         try:
-            key = int(args[0])
+            key = int(arguments.workflow)
             # If an index is provided, it can be cast to an int
         except ValueError:
             # A name was provided that can't be cast to an int
-            key = self.findWorkflowIndexByName(args[0])
+            key = self.findWorkflowIndexByName(arguments.workflow)
         try:
-            del self.internalPlist['workflows'][key]['components'][int(args[1])]
+            del self.internalPlist['workflows'][key]['components'][arguments.component]
         except (IndexError, TypeError):
-            print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
+            print >> sys.stderr, 'Error: No workflow found at %s' % arguments.workflow
             return 22
         return 0
     
