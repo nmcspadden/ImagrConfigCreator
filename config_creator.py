@@ -216,28 +216,38 @@ class ImagrConfigPlist():
     # RestartAction subcommands
     def set_restart_action(self, args):
         """Sets a restart action for the given workflow"""
-        if len(args) > 2 or len(args) == 0:
-            print >> sys.stderr, 'Usage: set-restart-action <workflowName or index> <action>'
-            return 22
-        if len(args) == 1:
-            action = 'none'
-        if len(args) == 2:
-            if args[1] not in ['restart', 'shutdown', 'none']:
-                print >> sys.stderr, 'Usage: set-restart-action must have \'restart\', \'shutdown\', or \'none\''
-                return 22
-            action = args[1]
+        p = argparse.ArgumentParser(prog='set-restart-action', 
+                                    description='''set-restart-action --workflow WORKFLOW --restart RESTART
+            Sets a restart action for WORKFLOW to RESTART.''')
+        p.add_argument('--workflow',
+                    metavar='WORKFLOW NAME OR INDEX',
+                    help='''quoted name or index number of target workflow''',
+                    choices=self.getWorkflowNames(),
+                    required = True)
+        p.add_argument('--restart',
+                    metavar='RESTART',
+                    help='''restart action to use: restart, shutdown, or none''',
+                    choices=['restart', 'shutdown', 'none'],
+                    required = True)
         try:
-            key = int(args[0])
+            arguments = p.parse_args(args)
+        except argparse.ArgumentError, errmsg:
+            print >> sys.stderr, str(errmsg)
+            return 22 # Invalid argument
+        except SystemExit:
+            return 22
+        try:
+            key = int(arguments.workflow)
             # If an index is provided, it can be cast to an int
             name = self.findWorkflowNameByIndex(key)
         except ValueError:
             # A name was provided that can't be cast to an int
-            key = self.findWorkflowIndexByName(args[0])
-            name = [ args[0] ]
+            key = self.findWorkflowIndexByName(arguments.workflow)
+            name = [ arguments.workflow ]
         try:
-            self.internalPlist['workflows'][key]['restart_action'] = action
+            self.internalPlist['workflows'][key]['restart_action'] = arguments.restart
         except (IndexError, TypeError):
-            print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
+            print >> sys.stderr, 'Error: No workflow found at %s' % arguments.workflow
             return 22
         self.show_workflow(name)
         return 0
@@ -245,21 +255,29 @@ class ImagrConfigPlist():
     # Bless subcommands
     def set_bless_target(self, args):
         """Sets bless to True or False for the given workflow"""
-        if len(args) != 2:
-            print >> sys.stderr, 'Usage: set-bless-target <workflowName or index> <True/False>'
-            return 22
+        p = argparse.ArgumentParser(prog='set-bless-target', 
+                                    description='''set-bless-target --workflow WORKFLOW --no-bless
+            Sets the bless_target option for WORKFLOW to False. By default, bless is true.''')
+        p.add_argument('--workflow',
+                    metavar='WORKFLOW NAME OR INDEX',
+                    help='''quoted name or index number of target workflow''',
+                    choices=self.getWorkflowNames(),
+                    required = True)
+        p.add_argument('--no-bless',
+                    help='''sets bless_target value to False''',
+                    action='store_false')
         try:
-            key = int(args[0])
+            key = int(arguments.workflow)
             # If an index is provided, it can be cast to an int
             name = self.findWorkflowNameByIndex(key)
         except ValueError:
             # A name was provided that can't be cast to an int
-            key = self.findWorkflowIndexByName(args[0])
-            name = [ args[0] ]
+            key = self.findWorkflowIndexByName(arguments.workflow)
+            name = [ arguments.workflow ]
         try:
-            self.internalPlist['workflows'][key]['bless_target'] = stringToBool(args[1])
+            self.internalPlist['workflows'][key]['bless_target'] = arguments.no_bless
         except (IndexError, TypeError):
-            print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
+            print >> sys.stderr, 'Error: No workflow found at %s' % arguments.workflow
             return 22
         self.show_workflow(name)
         return 0
@@ -267,21 +285,30 @@ class ImagrConfigPlist():
     # Description subcommands
     def set_description(self, args):
         """Sets description for the given workflow"""
-        if len(args) != 2:
-            print >> sys.stderr, 'Usage: set-description <workflowName or index> <description>'
-            return 22
+        p = argparse.ArgumentParser(prog='set-description', 
+                                    description='''set-description --workflow WORKFLOW --desc DESCRIPTION
+            Sets the description for WORKFLOW to DESCRIPTION.''')
+        p.add_argument('--workflow',
+                    metavar='WORKFLOW NAME OR INDEX',
+                    help='''quoted name or index number of target workflow''',
+                    choices=self.getWorkflowNames(),
+                    required = True)
+        p.add_argument('--desc',
+                    metavar='DESCRIPTION',
+                    help='''description for workflow''',
+                    required = True)
         try:
-            key = int(args[0])
+            key = int(arguments.workflow)
             # If an index is provided, it can be cast to an int
             name = self.findWorkflowNameByIndex(key)
         except ValueError:
             # A name was provided that can't be cast to an int
-            key = self.findWorkflowIndexByName(args[0])
-            name = [ args[0] ]
+            key = self.findWorkflowIndexByName(arguments.workflow)
+            name = [ arguments.workflow ]
         try:
-            self.internalPlist['workflows'][key]['description'] = args[1]
+            self.internalPlist['workflows'][key]['description'] = arguments.desc
         except (IndexError, TypeError):
-            print >> sys.stderr, 'Error: No workflow found at %s' % args[0]
+            print >> sys.stderr, 'Error: No workflow found at %s' % arguments.workflow
             return 22
         self.show_workflow(name)
         return 0
