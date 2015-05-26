@@ -196,10 +196,20 @@ class ImagrConfigPlist():
     
     def new_password(self, args):
         """Sets a new password"""
-        if len(args) != 1:
-            print >> sys.stderr, 'Usage: new-password <password>'
+        p = argparse.ArgumentParser(prog='new-password', 
+                                    description='''new-password PASSWORD
+            Sets a new PASSWORD to configuration plist.''')
+        p.add_argument('password',
+                    metavar='PASSWORD',
+                    help='''new password''')
+        try:
+            arguments = p.parse_args(args)
+        except argparse.ArgumentError, errmsg:
+            print >> sys.stderr, str(errmsg)
+            return 22 # Invalid argument
+        except SystemExit:
             return 22
-        self.internalPlist['password'] = hashlib.sha512(str(args[0])).hexdigest()
+        self.internalPlist['password'] = hashlib.sha512(str(arguments.password)).hexdigest()
         self.show_password([])
         return 0
     
