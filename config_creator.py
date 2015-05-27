@@ -549,7 +549,7 @@ class ImagrConfigPlist():
         p.add_argument('--workflow',
                     metavar='WORKFLOW NAME OR INDEX',
                     help='''quoted name or index number of target workflow''',
-                    choices=self.getWorkflowNames(),
+                    choices=self.getWorkflowNames() + range(1,len(self.internalPlist['workflows'])),
                     required = True)
         p.add_argument('--content',
                     metavar='CONTENT',
