@@ -541,6 +541,10 @@ class ImagrConfigPlist():
     
     def add_script_component(self, args):
         """Adds a Script component at index with content for workflow"""
+        print "Args: %s" % args
+        print "len: %s" % len(self.internalPlist['workflows'])
+        print "range: %s" % range(1,len(self.internalPlist['workflows']))
+        print "Choices: %s" % (self.getWorkflowNames() + range(1,len(self.internalPlist['workflows'])))
         p = argparse.ArgumentParser(prog='add-script-component',
                                     description='''add-script-component --workflow WORKFLOW --content CONTENT --no-firstboot --index INDEX
             Adds a Script task to the component list of the WORKFLOW at first boot. CONTENT must be a path to a file.
