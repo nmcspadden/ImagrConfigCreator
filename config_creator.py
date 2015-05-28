@@ -129,7 +129,8 @@ class ImagrConfigPlist():
         p.add_argument('workflow',
                     metavar='WORKFLOW NAME OR INDEX',
                     help='''quoted name or index number of target workflow''',
-                    choices=self.getWorkflowNames() )
+                    choices=self.getWorkflowNames() + [str(s) for s in range(len(self.internalPlist['workflows']))],
+                    )
         try:
             arguments = p.parse_args(args)
         except argparse.ArgumentError, errmsg:
@@ -161,7 +162,8 @@ class ImagrConfigPlist():
         p.add_argument('workflow',
                     metavar='WORKFLOW NAME OR INDEX',
                     help='''quoted name or index number of target workflow''',
-                    choices=self.getWorkflowNames() )
+                    choices=self.getWorkflowNames() + [str(s) for s in range(len(self.internalPlist['workflows']))],
+                    )
         try:
             arguments = p.parse_args(args)
         except argparse.ArgumentError, errmsg:
@@ -222,7 +224,7 @@ class ImagrConfigPlist():
         p.add_argument('--workflow',
                     metavar='WORKFLOW NAME OR INDEX',
                     help='''quoted name or index number of target workflow''',
-                    choices=self.getWorkflowNames(),
+                    choices=self.getWorkflowNames() + [str(s) for s in range(len(self.internalPlist['workflows']))],
                     required = True)
         p.add_argument('--restart',
                     metavar='RESTART',
@@ -261,7 +263,7 @@ class ImagrConfigPlist():
         p.add_argument('--workflow',
                     metavar='WORKFLOW NAME OR INDEX',
                     help='''quoted name or index number of target workflow''',
-                    choices=self.getWorkflowNames(),
+                    choices=self.getWorkflowNames() + [str(s) for s in range(len(self.internalPlist['workflows']))],
                     required = True)
         p.add_argument('--no-bless',
                     help='''sets bless_target value to False''',
@@ -291,7 +293,7 @@ class ImagrConfigPlist():
         p.add_argument('--workflow',
                     metavar='WORKFLOW NAME OR INDEX',
                     help='''quoted name or index number of target workflow''',
-                    choices=self.getWorkflowNames(),
+                    choices=self.getWorkflowNames() + [str(s) for s in range(len(self.internalPlist['workflows']))],
                     required = True)
         p.add_argument('--desc',
                     metavar='DESCRIPTION',
@@ -322,7 +324,8 @@ class ImagrConfigPlist():
         p.add_argument('workflow',
                     metavar='WORKFLOW NAME OR INDEX',
                     help='''quoted name or index number of target workflow''',
-                    choices=self.getWorkflowNames() )
+                    choices=self.getWorkflowNames() + [str(s) for s in range(len(self.internalPlist['workflows']))],
+                    )
         try:
             arguments = p.parse_args(args)
         except argparse.ArgumentError, errmsg:
@@ -352,7 +355,7 @@ class ImagrConfigPlist():
         p.add_argument('--workflow',
                     metavar='WORKFLOW NAME OR INDEX',
                     help='''quoted name or index number of target workflow''',
-                    choices=self.getWorkflowNames(),
+                    choices=self.getWorkflowNames() + [str(s) for s in range(len(self.internalPlist['workflows']))],
                     required=True)
         p.add_argument('--component',
                     metavar='INDEX',
@@ -388,7 +391,7 @@ class ImagrConfigPlist():
         p.add_argument('--workflow',
                     metavar='WORKFLOW NAME OR INDEX',
                     help='''quoted name or index number of target workflow''',
-                    choices=self.getWorkflowNames(),
+                    choices=self.getWorkflowNames() + [str(s) for s in range(len(self.internalPlist['workflows']))],
                     required = True)
         p.add_argument('--url',
                     metavar='URL',
@@ -442,7 +445,7 @@ class ImagrConfigPlist():
         p.add_argument('--workflow',
                     metavar='WORKFLOW NAME OR INDEX',
                     help='''quoted name or index number of target workflow''',
-                    choices=self.getWorkflowNames(),
+                    choices=self.getWorkflowNames() + [str(s) for s in range(len(self.internalPlist['workflows']))],
                     required = True)
         p.add_argument('--url',
                     metavar='URL',
@@ -496,7 +499,7 @@ class ImagrConfigPlist():
         p.add_argument('--workflow',
                     metavar='WORKFLOW NAME OR INDEX',
                     help='''quoted name or index number of target workflow''',
-                    choices=self.getWorkflowNames(),
+                    choices=self.getWorkflowNames() + [str(s) for s in range(len(self.internalPlist['workflows']))],
                     required = True)
         p.add_argument('--use-serial',
                     help='''use the computer's serial number as the default name''',
@@ -541,10 +544,6 @@ class ImagrConfigPlist():
     
     def add_script_component(self, args):
         """Adds a Script component at index with content for workflow"""
-        print "Args: %s" % args
-        print "len: %s" % len(self.internalPlist['workflows'])
-        print "range: %s" % range(1,len(self.internalPlist['workflows']))
-        print "Choices: %s" % (self.getWorkflowNames() + range(1,len(self.internalPlist['workflows'])))
         p = argparse.ArgumentParser(prog='add-script-component',
                                     description='''add-script-component --workflow WORKFLOW --content CONTENT --no-firstboot --index INDEX
             Adds a Script task to the component list of the WORKFLOW at first boot. CONTENT must be a path to a file.
@@ -553,7 +552,7 @@ class ImagrConfigPlist():
         p.add_argument('--workflow',
                     metavar='WORKFLOW NAME OR INDEX',
                     help='''quoted name or index number of target workflow''',
-                    choices=self.getWorkflowNames() + range(1,len(self.internalPlist['workflows'])),
+                    choices=self.getWorkflowNames() + [str(s) for s in range(len(self.internalPlist['workflows']))],
                     required = True)
         p.add_argument('--content',
                     metavar='CONTENT',
