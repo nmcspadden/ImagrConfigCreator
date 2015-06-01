@@ -269,6 +269,13 @@ class ImagrConfigPlist():
                     help='''sets bless_target value to False''',
                     action='store_false')
         try:
+            arguments = p.parse_args(args)
+        except argparse.ArgumentError, errmsg:
+            print >> sys.stderr, str(errmsg)
+            return 22 # Invalid argument
+        except SystemExit:
+            return 22
+        try:
             key = int(arguments.workflow)
             # If an index is provided, it can be cast to an int
             name = self.findWorkflowNameByIndex(key)
@@ -299,6 +306,13 @@ class ImagrConfigPlist():
                     metavar='DESCRIPTION',
                     help='''description for workflow''',
                     required = True)
+        try:
+            arguments = p.parse_args(args)
+        except argparse.ArgumentError, errmsg:
+            print >> sys.stderr, str(errmsg)
+            return 22 # Invalid argument
+        except SystemExit:
+            return 22
         try:
             key = int(arguments.workflow)
             # If an index is provided, it can be cast to an int
