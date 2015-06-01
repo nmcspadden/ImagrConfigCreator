@@ -37,8 +37,6 @@ Available sub-commands:
 
 ### Command list:
 
-Arguments in [brackets] are optional.
-
 For more information on what these arguments represent, consult the [Imagr documentation](https://github.com/grahamgilbert/imagr/wiki/Workflow-Config).
 
 `exit` - **Changes are only saved when you exit. Ctrl-C or Ctrl-D will NOT save the plist.**
