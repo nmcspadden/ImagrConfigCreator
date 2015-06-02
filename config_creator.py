@@ -24,7 +24,9 @@ class ImagrConfigPlist():
     workflowComponentTypes = {  'image' : {'url':'http'}, 
                                 'package' : { 'url' : 'http', 'first_boot' : True },
                                 'computername' : { 'use_serial' : False, 'auto' : False },
-                                'script' : { 'content' : '#!/bin/bash', 'first_boot' : True }
+                                'script' : { 'content' : '#!/bin/bash', 'first_boot' : True },
+                                'eraseVolume' : { 'name' : 'Macintosh HD', 'format' : 'Journaled HFS+' },
+                                'partition' : { 'map' : 'GPTFormat', 'partitions' : [ { 'format_type' : 'Journaled HFS+', 'name' : 'Macintosh HD', 'size' : '100%', 'target' : True } ] }
                              }
     
     def __init__(self, path):
@@ -586,10 +588,6 @@ class ImagrConfigPlist():
             return 22 # Invalid argument
         except SystemExit:
             return 22
-        scriptComponent = self.workflowComponentTypes['script'].copy()
-        scriptComponent['content'] = readfile(arguments.content)
-        scriptComponent['first_boot'] = stringToBool(arguments.no_firstboot)
-        scriptComponent['type'] = 'script'
         try:
             fileobject = open(os.path.expanduser(arguments.content), mode='r', buffering=1)
             data = fileobject.read()
@@ -614,6 +612,148 @@ class ImagrConfigPlist():
             else:
                 index = int(arguments.index)
             self.internalPlist['workflows'][key]['components'].insert(index, scriptComponent)
+        except (IndexError, TypeError):
+            print >> sys.stderr, 'Error: No workflow found at %s' % arguments.workflow
+            return 22
+        self.show_workflow(name)
+        return 0
+
+    def add_erase_component(self, args):
+        """Adds an eraseVolume component at index with content for workflow"""
+        p = argparse.ArgumentParser(prog='add-erase-component',
+                                    description='''add-erase-component --workflow WORKFLOW --name NAME --format FORMAT --index INDEX
+            Adds an eraseVolume task to the component list of the WORKFLOW. 
+            NAME is the name of the newly formatted volume. Defaults to "Macintosh HD".
+            FORMAT is the format of the volume. Defaults to "Journaled HFS+".
+            If INDEX is specified, task is added at that INDEX, otherwise added to end of list.''')
+        p.add_argument('--workflow',
+                    metavar='WORKFLOW NAME OR INDEX',
+                    help='''quoted name or index number of target workflow''',
+                    choices=self.getWorkflowNames() + [str(s) for s in range(len(self.internalPlist['workflows']))],
+                    required = True)
+        p.add_argument('--name',
+                    metavar='NAME',
+                    help='''name of volume - defaults to "Macintosh HD"''',
+                    default = 'Macintosh HD')
+        p.add_argument('--format',
+                    metavar='FORMAT',
+                    help='''format of volume - defaults to "Journaled HFS+"''',
+                    default = 'Journaled HFS+')
+        p.add_argument('--index',
+                    metavar='INDEX',
+                    help='''where in the component list the task will go - defaults to end of list''',
+                    default = False)
+        try:
+            arguments = p.parse_args(args)
+        except argparse.ArgumentError, errmsg:
+            print >> sys.stderr, str(errmsg)
+            return 22 # Invalid argument
+        except SystemExit:
+            return 22
+        eraseComponent = self.workflowComponentTypes['eraseVolume'].copy()
+        eraseComponent['name'] = arguments.name
+        eraseComponent['format'] = arguments.format
+        eraseComponent['type'] = 'eraseVolume'
+        try:
+            key = int(arguments.workflow)
+            # If an index is provided, it can be cast to an int
+            name = self.findWorkflowNameByIndex(key)
+        except ValueError:
+            # A name was provided that can't be cast to an int
+            key = self.findWorkflowIndexByName(arguments.workflow)
+            name = [ arguments.workflow ]
+        try:
+            if arguments.index == False: #this means one wasn't specified
+                index = len(self.internalPlist['workflows'][key]['components'])
+            else:
+                index = int(arguments.index)
+            self.internalPlist['workflows'][key]['components'].insert(index, eraseComponent)
+        except (IndexError, TypeError):
+            print >> sys.stderr, 'Error: No workflow found at %s' % arguments.workflow
+            return 22
+        self.show_workflow(name)
+        return 0
+
+    def add_partition_component(self, args):
+        """Adds a Partition component at index with content for workflow"""
+        p = argparse.ArgumentParser(prog='add-erase-component',
+                                    description='''add-partition-component --workflow WORKFLOW --map MAP --names NAMES --formats FORMATS --sizes SIZES --target NAME --index INDEX
+            Adds a Partition task to the component list of the WORKFLOW. 
+            MAP is the partition map of the disk. Defaults to "GPTFormat" (GUID).
+            NAMES, FORMATS, and SIZES are lists of volumes to create, in order, with specific names, formats, and sizes.
+            If INDEX is specified, task is added at that INDEX, otherwise added to end of list.''')
+        p.add_argument('--workflow',
+                    metavar='WORKFLOW NAME OR INDEX',
+                    help='''quoted name or index number of target workflow''',
+                    choices=self.getWorkflowNames() + [str(s) for s in range(len(self.internalPlist['workflows']))],
+                    required = True)
+        p.add_argument('--map',
+                    metavar='MAP',
+                    help='''partition map of disk - defaults to "GPTFormat"''',
+                    default = 'GPTFormat')
+        p.add_argument('--names',
+                    metavar='NAMES',
+                    nargs = '+',
+                    help='''names of volumes to create, in order''',
+                    required = True)
+        p.add_argument('--formats',
+                    metavar='FORMATS',
+                    nargs = '+',
+                    help='''formats of volumes to create, in order''',
+                    required = True)
+        p.add_argument('--sizes',
+                    metavar='SIZES',
+                    nargs = '+',
+                    help='''sizes of volumes to create, in order''',
+                    required = True)
+        p.add_argument('--target',
+                    metavar='NAME',
+                    help='''this volume will be set as the target for future actions in the workflow''',
+                    required = True)
+        p.add_argument('--index',
+                    metavar='INDEX',
+                    help='''where in the component list the task will go - defaults to end of list''',
+                    default = False)
+        try:
+            arguments = p.parse_args(args)
+        except argparse.ArgumentError, errmsg:
+            print >> sys.stderr, str(errmsg)
+            return 22 # Invalid argument
+        except SystemExit:
+            return 22
+        partitionComponent = self.workflowComponentTypes['partition'].copy()
+        partitionComponent['map'] = arguments.map
+        partitionComponent['type'] = 'partition'
+        partitionList = list()
+        thePartition = dict()
+        print "IT BEGINS"
+        print "Names: %s" % arguments.names
+        print "Formats: %s" % arguments.formats
+        print "Sizes: %s" % arguments.sizes
+        for i in range(0,len(arguments.names)):
+            print "Starting %s" % i
+            thePartition = dict()
+            thePartition['name'] = arguments.names[i]
+            thePartition['format_type'] = arguments.formats[i]
+            thePartition['size'] = arguments.sizes[i]
+            print "Current partition: %s" % thePartition
+            partitionList.append(thePartition)
+            print "Partition list: %s" % partitionList
+        partitionComponent['partitions'] = partitionList
+        try:
+            key = int(arguments.workflow)
+            # If an index is provided, it can be cast to an int
+            name = self.findWorkflowNameByIndex(key)
+        except ValueError:
+            # A name was provided that can't be cast to an int
+            key = self.findWorkflowIndexByName(arguments.workflow)
+            name = [ arguments.workflow ]
+        try:
+            if arguments.index == False: #this means one wasn't specified
+                index = len(self.internalPlist['workflows'][key]['components'])
+            else:
+                index = int(arguments.index)
+            self.internalPlist['workflows'][key]['components'].insert(index, partitionComponent)
         except (IndexError, TypeError):
             print >> sys.stderr, 'Error: No workflow found at %s' % arguments.workflow
             return 22
@@ -733,6 +873,8 @@ def main():
         'add-package-component':  'workflows',    # add-package-component <workflow> <index> <url> <first_boot t/f>
         'add-computername-component':  'workflows',    # add-image-component <workflow> <index> <use_serial t/f> <auto t/f>
         'add-script-component':  'workflows',    # add-image-component <workflow> <index> <content> <first_boot t/f>
+        'add-erase-component':  'workflows',
+        'add-partition-component':  'workflows',
         'remove-component':     'components',   # remove-component <index> <workflow>
         'display-components':   'components',   # display-components <workflow>
         'exit':                 'default',
