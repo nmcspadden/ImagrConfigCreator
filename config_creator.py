@@ -726,19 +726,12 @@ class ImagrConfigPlist():
         partitionComponent['type'] = 'partition'
         partitionList = list()
         thePartition = dict()
-        print "IT BEGINS"
-        print "Names: %s" % arguments.names
-        print "Formats: %s" % arguments.formats
-        print "Sizes: %s" % arguments.sizes
         for i in range(0,len(arguments.names)):
-            print "Starting %s" % i
             thePartition = dict()
             thePartition['name'] = arguments.names[i]
             thePartition['format_type'] = arguments.formats[i]
             thePartition['size'] = arguments.sizes[i]
-            print "Current partition: %s" % thePartition
             partitionList.append(thePartition)
-            print "Partition list: %s" % partitionList
         partitionComponent['partitions'] = partitionList
         try:
             key = int(arguments.workflow)
