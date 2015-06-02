@@ -709,7 +709,7 @@ class ImagrConfigPlist():
                     required = True)
         p.add_argument('--target',
                     metavar='NAME',
-                    help='''this volume will be set as the target for future actions in the workflow''',
+                    help='''this volume will be set as the target for future actions in the workflow, must be among the list of names provided''',
                     required = True)
         p.add_argument('--index',
                     metavar='INDEX',
@@ -727,12 +727,19 @@ class ImagrConfigPlist():
         partitionComponent['type'] = 'partition'
         partitionList = list()
         thePartition = dict()
+        targetSet = False
         for i in range(0,len(arguments.names)):
             thePartition = dict()
             thePartition['name'] = arguments.names[i]
             thePartition['format_type'] = arguments.formats[i]
             thePartition['size'] = arguments.sizes[i]
+            if arguments.names[i] == arguments.target:
+                thePartition['target'] = True
+                targetSet = True
             partitionList.append(thePartition)
+        if not targetSet:
+            print >> sys.stderr, 'Error: target "%s" is not a valid partition target choice.' % arguments.target
+            return 22
         partitionComponent['partitions'] = partitionList
         try:
             key = int(arguments.workflow)
