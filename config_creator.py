@@ -690,6 +690,7 @@ class ImagrConfigPlist():
         p.add_argument('--map',
                     metavar='MAP',
                     help='''partition map of disk - defaults to "GPTFormat"''',
+                    choices = ['GPTFormat', 'APMFormat', 'MBRFormat'],
                     default = 'GPTFormat')
         p.add_argument('--names',
                     metavar='NAMES',
