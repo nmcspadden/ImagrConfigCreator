@@ -16,8 +16,10 @@ Entering interactive mode... (type "help" for commands)
 > help
 Available sub-commands:
 	add-computername-component
+	add-erase-component
 	add-image-component
 	add-package-component
+	add-partition-component
 	add-script-component
 	add-workflow
 	display-components
@@ -67,6 +69,10 @@ Component related:
 * `add-package-component --workflow NAME OR INDEX --url URL --no-firstboot --index INDEX` - adds a Package task to the component list at "component index" for a workflow by "name" or at "index". "URL" should be a URL. By default, this package will be installed at first boot, unless "--no-firstboot" is specified. If "component index" is not specified, task is added to the end of the component list. 
 * `add-computername-component --workflow NAME OR INDEX --use-serial --auto --index INDEX` - adds a ComputerName task to the component list at "component index" for a workflow by "name" or at "index". If "use-serial" is specified, the serial number will be the default computer name choice. If "auto" is specified, the serial number will be forced as the computer name and not allow overriding. If "component index" is not specified, task is added to the end of the component list. 
 * `add-script-component --workflow NAME OR INDEX --content CONTENT --no-firstboot --index INDEX` - adds a Script task to the component list at "component index" for a workflow by "name" or at "index". "CONTENT" should be a valid path to a script that will be parsed and added to the plist. By default, this package will be installed at first boot, unless "--no-firstboot" is specified. If "component index" is not specified, task is added to the end of the component list. 
+* `add-erase-component --workflow NAME OR INDEX --name NAME --format FORMAT --index INDEX` - adds an Erase task to the component list at "component index" for a workflow by "name" or at "index". "NAME" is the name to set the erased volume to. By default, this is "Macintosh HD". "FORMAT" is the format type to use for the new volume. By default, this is "Journaled HFS+". For a list of acceptable format types, use `diskutil listFileSystems`. If "component index" is not specified, task is added to the end of the component list. 
+* `add-partition-component --workflow NAME OR INDEX --map MAP --names NAMES --formats FORMATS --sizes SIZES --target NAME --index INDEX` - adds a Partition task to the component list at "component index" for a workflow by "name" or at "index". "MAP" is the partition map to use for the disk. By default, this is "GPTFormat" (GUID). "NAMES", "FORMATS", and "SIZES" will take any number of arguments, each corresponding to a volume that will be created with NAME, FORMAT, and SIZE. For details on acceptable SIZES values, please see the `diskutil` man pages. If "component index" is not specified, task is added to the end of the component list. 
+
+
 
 ## Examples
 
@@ -159,6 +165,88 @@ echo "{{target_volume}}"
 			<string></string>
 			<key>name</key>
 			<string>First Image</string>
+			<key>restart_action</key>
+			<string>none</string>
+		</dict>
+	</array>
+</dict>
+</plist>
+```
+
+### Partition example
+
+```
+$ ./config_creator.py new.plist
+Entering interactive mode... (type "help" for commands)
+> add-workflow 'hello'
+Workflow 'hello':
+{'bless_target': False,
+ 'components': [],
+ 'description': '',
+ 'name': 'hello',
+ 'restart_action': 'none'}
+> add-partition-component --workflow 'hello' --map 'GPTFormat' --names 'First' 'Second' --formats 'Journaled HFS+' 'Journaled HFS+' --sizes '50%' '50%' --target 'First'
+Workflow 'hello':
+{'bless_target': False,
+ 'components': [{'map': 'GPTFormat',
+                 'partitions': [{'format_type': 'Journaled HFS+',
+                                 'name': 'First',
+                                 'size': '50%'},
+                                {'format_type': 'Journaled HFS+',
+                                 'name': 'Second',
+                                 'size': '50%'}],
+                 'type': 'partition'}],
+ 'description': '',
+ 'name': 'hello',
+ 'restart_action': 'none'}
+> 
+```
+
+Resulting plist:
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>password</key>
+	<string></string>
+	<key>workflows</key>
+	<array>
+		<dict>
+			<key>bless_target</key>
+			<false/>
+			<key>components</key>
+			<array>
+				<dict>
+					<key>map</key>
+					<string>GPTFormat</string>
+					<key>partitions</key>
+					<array>
+						<dict>
+							<key>format_type</key>
+							<string>Journaled HFS+</string>
+							<key>name</key>
+							<string>First</string>
+							<key>size</key>
+							<string>50%</string>
+						</dict>
+						<dict>
+							<key>format_type</key>
+							<string>Journaled HFS+</string>
+							<key>name</key>
+							<string>Second</string>
+							<key>size</key>
+							<string>50%</string>
+						</dict>
+					</array>
+					<key>type</key>
+					<string>partition</string>
+				</dict>
+			</array>
+			<key>description</key>
+			<string></string>
+			<key>name</key>
+			<string>hello</string>
 			<key>restart_action</key>
 			<string>none</string>
 		</dict>
